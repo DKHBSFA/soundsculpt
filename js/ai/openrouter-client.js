@@ -113,7 +113,7 @@ class OpenRouterClient {
    * Make the actual API request
    */
   async _makeRequest(systemPrompt, userPrompt, model, options) {
-    return fetch(OPENROUTER_CONFIG.endpoint, {
+    const fetchOptions = {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -134,7 +134,14 @@ class OpenRouterClient {
         max_tokens: options.max_tokens ?? OPENROUTER_CONFIG.max_tokens,
         response_format: { type: 'json_object' }
       })
-    });
+    };
+
+    // Add abort signal if provided
+    if (options.signal) {
+      fetchOptions.signal = options.signal;
+    }
+
+    return fetch(OPENROUTER_CONFIG.endpoint, fetchOptions);
   }
 
   /**
@@ -142,6 +149,13 @@ class OpenRouterClient {
    */
   async _generateWithFallback(systemPrompt, userPrompt, options) {
     for (const model of OPENROUTER_CONFIG.fallbackModels) {
+      // Check if aborted before trying next model
+      if (options.signal?.aborted) {
+        const abortError = new Error('Generation cancelled');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
+
       try {
         console.log(`Trying fallback model: ${model}`);
         this.currentModel = model;
@@ -153,6 +167,8 @@ class OpenRouterClient {
           return this._parseResponse(data);
         }
       } catch (e) {
+        // Re-throw abort errors
+        if (e.name === 'AbortError') throw e;
         console.warn(`Fallback ${model} failed:`, e.message);
         continue;
       }

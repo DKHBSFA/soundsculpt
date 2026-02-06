@@ -44,6 +44,7 @@ import {
   parseStrudelToSteps,
   isSilent as isPatternSilent
 } from './sync/strudel-parser.js';
+import generationLoading from './ui/generation-loading.js';
 
 // Keep legacy imports for backwards compatibility
 let SYSTEM_PROMPT, PROJECT_PROMPTS, VOICE_PROMPTS, buildVoiceContext, fillPromptTemplate;
@@ -2736,32 +2737,32 @@ async function generateAIFirst(preset) {
   const styleName = preset.style || selectedStyle;
   const projectName = `${styleName} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
 
-  // Show loading state
-  eventBus.emit(Events.TOAST_SHOW, {
-    message: 'AI is composing with Strudel patterns...',
-    type: 'info',
-    duration: 15000,
-  });
+  // Show loading overlay (not toast)
+  const abortController = generationLoading.show('connecting');
 
   try {
     // Get family for this style
     const family = getFamily(styleName);
 
     // Build prompts
+    generationLoading.updateMessage('composing');
     const systemPrompt = buildSystemPrompt(family);
     const userPrompt = buildUserPrompt(preset, {
       duration: selectedDuration,
       energy: energyLevel / 100
     });
 
-    // Call AI
-    const result = await openRouterClient.generate(systemPrompt, userPrompt);
+    // Call AI with abort support
+    const result = await openRouterClient.generate(systemPrompt, userPrompt, {
+      signal: abortController.signal
+    });
 
     if (!result.data) {
       throw new Error('No data returned from AI');
     }
 
     // Validate and post-process
+    generationLoading.updateMessage('processing');
     const validation = validateAIOutputNew(result.data, preset);
     if (!validation.valid) {
       console.warn('AI output validation warnings:', validation.warnings);
@@ -2770,23 +2771,35 @@ async function generateAIFirst(preset) {
       }
     }
 
-    const processed = postProcessAIOutput(result.data);
+    const processed = postProcessAIOutput(result.data, preset);
 
     // Create project from AI output
+    generationLoading.updateMessage('building');
     const project = createProjectFromAINew(processed, preset, projectName);
 
+    // Hide overlay
+    generationLoading.hide();
+
     eventBus.emit(Events.TOAST_SHOW, {
-      message: `AI generated ${project.voices.length} voices in ${styleName} style`,
+      message: `Generated ${project.voices.length} voices`,
       type: 'success',
+      duration: 3000,
     });
 
     return project;
 
   } catch (error) {
+    generationLoading.hide();
+
+    // User cancelled
+    if (error.name === 'AbortError') {
+      return null;
+    }
+
     console.error('AI generation failed:', error);
 
     eventBus.emit(Events.TOAST_SHOW, {
-      message: `AI unavailable, using preset patterns...`,
+      message: 'Using preset patterns...',
       type: 'warning',
     });
 

@@ -233,6 +233,32 @@ export function buildUserPrompt(preset, params = {}) {
     ? `\nVOICING PRESETS:\n${JSON.stringify(preset.voiceLeading.chords, null, 2)}`
     : '';
 
+  // Build critical rules section with specific limits
+  const criticalRules = `
+## CRITICAL RULES — MUST FOLLOW
+
+### Orchestration Limits (ENFORCED - violations will be auto-fixed)
+- intro: MAXIMUM ${orchLimits.intro?.max_simultaneous_voices || 2} active voices — use 'silent' for others
+- build: MAXIMUM ${orchLimits.build?.max_simultaneous_voices || 4} active voices
+- climax: MAXIMUM ${orchLimits.climax?.max_simultaneous_voices || 6} active voices
+- resolve: MAXIMUM ${orchLimits.resolve?.max_simultaneous_voices || 3} active voices
+
+### Voice Selection by Phase (from preset arc)
+- intro: ${preset.arc?.intro?.layers?.join(', ') || 'minimal — 1-2 instruments'}
+- build: ${preset.arc?.build?.layers?.join(', ') || 'add rhythm section'}
+- climax: ${preset.arc?.climax?.layers?.join(', ') || 'full ensemble'}
+- resolve: ${preset.arc?.resolve?.layers?.join(', ') || 'wind down'}
+
+### Velocity by Phase (REQUIRED in .gain())
+- intro: .gain(${(preset.arc?.intro?.velocity || 0.35).toFixed(2)})
+- build: .gain(${(preset.arc?.build?.velocity || 0.55).toFixed(2)})
+- climax: .gain(${(preset.arc?.climax?.velocity || 0.8).toFixed(2)})
+- resolve: .gain(${(preset.arc?.resolve?.velocity || 0.35).toFixed(2)})
+
+### Spectral Balance
+${orchLimits.spectral_rule || 'Avoid frequency masking — spread voices across spectrum'}
+`;
+
   return `Generate a ${preset.style.toUpperCase()} piece.
 
 ## STYLE INFO
@@ -253,21 +279,7 @@ Scale: ${preset.progression?.scale || 'natural_minor'}
 ${Object.entries(preset.sounds || {}).map(([name, cfg]) =>
   `- ${name}: source=${cfg.source}, ${cfg.lpf ? `lpf=${cfg.lpf}` : ''} ${cfg.room ? `room=${cfg.room}` : ''} gain=${cfg.gain || 0.7}`
 ).join('\n')}
-
-## ARC (which voices play in each phase)
-- intro: ${preset.arc?.intro?.layers?.join(', ') || 'sparse'} — velocity ${preset.arc?.intro?.velocity || 0.3}
-- build: ${preset.arc?.build?.layers?.join(', ') || 'add drums, bass'} — velocity ${preset.arc?.build?.velocity || 0.5}
-- climax: ${preset.arc?.climax?.layers?.join(', ') || 'all voices'} — velocity ${preset.arc?.climax?.velocity || 0.8}
-- resolve: ${preset.arc?.resolve?.layers?.join(', ') || 'wind down'} — velocity ${preset.arc?.resolve?.velocity || 0.3}
-
-## ORCHESTRATION LIMITS (must follow)
-- intro: max ${orchLimits.intro?.max_simultaneous_voices || 2} voices
-- build: max ${orchLimits.build?.max_simultaneous_voices || 4} voices
-- climax: max ${orchLimits.climax?.max_simultaneous_voices || 6} voices
-- resolve: max ${orchLimits.resolve?.max_simultaneous_voices || 3} voices
-- hard limit: ${orchLimits.hard_limit || 6} voices total
-${orchLimits.spectral_rule ? `- Spectral rule: ${orchLimits.spectral_rule}` : ''}
-
+${criticalRules}
 ## GENERATION PARAMETERS
 - Duration: ~${duration} seconds
 - Total bars: ${totalBars}
@@ -388,11 +400,12 @@ Return JSON with single voice:
  * Validate AI output structure
  * @param {Object} output - AI output
  * @param {Object} preset - Original preset for validation
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
+ * @returns {{ valid: boolean, errors: string[], warnings: string[], fixes: Array }}
  */
 export function validateAIOutput(output, preset = null) {
   const errors = [];
   const warnings = [];
+  const fixes = [];
 
   // Required fields
   if (!output.tempo || typeof output.tempo !== 'number') {
@@ -421,6 +434,14 @@ export function validateAIOutput(output, preset = null) {
             warnings.push(`Voice ${voice.name}: missing ${phase} pattern`);
           }
         });
+
+        // Check for gain in patterns
+        requiredPhases.forEach(phase => {
+          const pattern = voice.patternCode[phase];
+          if (pattern && pattern !== 'silent' && !pattern.includes('.gain(')) {
+            warnings.push(`Voice ${voice.name} ${phase}: missing .gain() — will be auto-applied`);
+          }
+        });
       }
     });
   }
@@ -438,24 +459,68 @@ export function validateAIOutput(output, preset = null) {
 
       const maxVoices = limits[phase]?.max_simultaneous_voices || 6;
       if (activeVoices > maxVoices) {
-        warnings.push(`${phase}: ${activeVoices} voices exceeds limit of ${maxVoices}`);
+        warnings.push(`${phase}: ${activeVoices} voices exceeds limit of ${maxVoices} — will be enforced`);
+        fixes.push({ type: 'orchestration', phase, excess: activeVoices - maxVoices });
       }
     });
+  }
+
+  // Validate cadence for tonal styles
+  if (preset?.family === 'tonal' || preset?.harmonic_system?.type === 'functional_tonal') {
+    const chords = output.chordProgression || [];
+    if (chords.length > 0) {
+      const lastChord = chords[chords.length - 1];
+      const expectedCadence = preset.harmonic_system?.cadences?.primary || 'authentic';
+
+      // Check if last chord is tonic (I, Imaj7, etc.)
+      const isOnTonic = lastChord && (
+        lastChord.match(/^I($|maj|6|7)/) ||
+        lastChord.match(/^(C|D|E|F|G|A|B)(maj7?|6)?$/i)
+      );
+
+      if (expectedCadence === 'authentic' && !isOnTonic) {
+        warnings.push(`Tonal style should end on tonic, got: ${lastChord}`);
+        fixes.push({ type: 'cadence', suggested: 'End on I or Imaj7' });
+      }
+    }
+  }
+
+  // Spectral balance check
+  if (preset?.orchestration_limits?.spectral_rule) {
+    const voices = output.voices || [];
+    const climaxVoices = voices.filter(v => {
+      const p = v.patternCode?.climax;
+      return p && p !== 'silent';
+    });
+
+    // Check if all voices are in the same register (simplified check)
+    const hasLowVoice = climaxVoices.some(v =>
+      v.type === 'bass' || v.name?.toLowerCase().includes('bass')
+    );
+    const hasHighVoice = climaxVoices.some(v =>
+      v.type === 'lead' || v.type === 'arp' || v.name?.toLowerCase().match(/lead|arp|melody/)
+    );
+
+    if (climaxVoices.length >= 3 && (!hasLowVoice || !hasHighVoice)) {
+      warnings.push('Climax may lack spectral balance — consider adding bass or high register voice');
+    }
   }
 
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
+    fixes
   };
 }
 
 /**
  * Post-process and fix common AI output issues
  * @param {Object} output - AI output
+ * @param {Object} preset - Original preset for orchestration limits
  * @returns {Object} Fixed output
  */
-export function postProcessAIOutput(output) {
+export function postProcessAIOutput(output, preset = null) {
   const fixed = { ...output };
 
   // Ensure voices array exists
@@ -504,7 +569,91 @@ export function postProcessAIOutput(output) {
     fixed.phases = calculatePhases(fixed.totalBars);
   }
 
+  // Enforce orchestration limits from preset
+  if (preset?.orchestration_limits) {
+    fixed.voices = enforceOrchestrationLimits(fixed.voices, preset.orchestration_limits);
+  }
+
+  // Apply arc velocity where missing
+  if (preset?.arc) {
+    fixed.voices = applyArcVelocity(fixed.voices, preset.arc);
+  }
+
   return fixed;
+}
+
+/**
+ * Enforce orchestration limits by silencing excess voices per phase
+ * @param {Array} voices - Voice array
+ * @param {Object} limits - Orchestration limits from preset
+ * @returns {Array} Voices with limits enforced
+ */
+function enforceOrchestrationLimits(voices, limits) {
+  const phases = ['intro', 'build', 'climax', 'resolve'];
+
+  // Voice priority (keep these active when silencing)
+  const priorityOrder = ['kick', 'bass', 'snare', 'lead', 'pad', 'hihat', 'arp', 'texture', 'fx'];
+
+  phases.forEach(phase => {
+    const maxVoices = limits[phase]?.max_simultaneous_voices || limits.hard_limit || 6;
+
+    // Get active voices in this phase
+    const activeVoices = voices.filter(v => {
+      const pattern = v.patternCode?.[phase];
+      return pattern && pattern !== 'silent' && pattern !== '~';
+    });
+
+    if (activeVoices.length > maxVoices) {
+      // Sort by priority (higher priority = lower index = kept)
+      activeVoices.sort((a, b) => {
+        const aType = a.type?.toLowerCase() || a.name?.toLowerCase() || '';
+        const bType = b.type?.toLowerCase() || b.name?.toLowerCase() || '';
+        const aP = priorityOrder.findIndex(p => aType.includes(p));
+        const bP = priorityOrder.findIndex(p => bType.includes(p));
+        return (aP === -1 ? 99 : aP) - (bP === -1 ? 99 : bP);
+      });
+
+      // Silence voices beyond limit
+      for (let i = maxVoices; i < activeVoices.length; i++) {
+        const voice = activeVoices[i];
+        if (voice.patternCode && typeof voice.patternCode === 'object') {
+          voice.patternCode[phase] = 'silent';
+        }
+      }
+
+      console.log(`Enforced ${phase} limit: silenced ${activeVoices.length - maxVoices} voices`);
+    }
+  });
+
+  return voices;
+}
+
+/**
+ * Apply arc velocity to patterns that don't have .gain()
+ * @param {Array} voices - Voice array
+ * @param {Object} arc - Arc definition from preset
+ * @returns {Array} Voices with velocity applied
+ */
+function applyArcVelocity(voices, arc) {
+  const phases = ['intro', 'build', 'climax', 'resolve'];
+
+  return voices.map(voice => {
+    const processed = { ...voice };
+
+    if (!processed.patternCode || typeof processed.patternCode !== 'object') {
+      return processed;
+    }
+
+    phases.forEach(phase => {
+      const pattern = processed.patternCode[phase];
+      if (pattern && pattern !== 'silent' && !pattern.includes('.gain(')) {
+        const velocity = arc[phase]?.velocity || 0.7;
+        processed.patternCode[phase] = `${pattern}.gain(${velocity.toFixed(2)})`;
+      }
+    });
+
+    return processed;
+  });
 }
 
 export default {
