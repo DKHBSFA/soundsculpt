@@ -1,0 +1,193 @@
+{
+  "app": {
+    "title": "SoundSculpt",
+    "tagline": "Browser-based audio composition"
+  },
+  "transport": {
+    "play": "Play",
+    "stop": "Stop",
+    "pause": "Pause",
+    "record": "Record",
+    "loop": "Loop",
+    "bpm": "BPM",
+    "timeSig": "Time Signature"
+  },
+  "views": {
+    "sequencer": "Sequencer",
+    "pianoRoll": "Piano Roll",
+    "score": "Score",
+    "patch": "Patch",
+    "code": "Code"
+  },
+  "voice": {
+    "mute": "Mute",
+    "solo": "Solo",
+    "volume": "Volume",
+    "pan": "Pan",
+    "add": "Add Voice",
+    "remove": "Remove",
+    "rename": "Rename",
+    "duplicate": "Duplicate",
+    "armed": "Armed",
+    "monitoring": "Monitoring"
+  },
+  "file": {
+    "new": "New Project",
+    "open": "Open",
+    "save": "Save",
+    "saveAs": "Save As",
+    "export": {
+      "wav": "Export WAV",
+      "midi": "Export MIDI",
+      "musicxml": "Export MusicXML"
+    },
+    "import": "Import",
+    "unsavedWarning": "You have unsaved changes. Leave anyway?",
+    "autoSaved": "Auto-saved"
+  },
+  "welcome": {
+    "generate": "Generate Music",
+    "generateDesc": "Let AI create a starting point",
+    "blank": "Start from Scratch",
+    "blankDesc": "Empty project",
+    "load": "Load Project",
+    "loadDesc": "Open .soundsculpt file",
+    "recent": "Recent Projects",
+    "recoverDraft": "Recover unsaved work?"
+  },
+  "generation": {
+    "title": "Generate Music",
+    "style": "Style",
+    "duration": "Duration",
+    "energy": "Energy",
+    "template": "Template",
+    "generate": "Generate",
+    "preview": "Preview"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "autoSave": "Auto-save",
+    "autoSaveInterval": "Auto-save interval",
+    "minutes": "minutes",
+    "scale": "Scale",
+    "quantize": "Quantize to scale"
+  },
+  "spatial": {
+    "title": "Spatial Panner",
+    "mode": "Mode",
+    "stereo": "Simple Stereo",
+    "hrtf": "3D HRTF",
+    "position": "Position",
+    "height": "Height",
+    "front": "Front",
+    "back": "Back",
+    "left": "Left",
+    "right": "Right",
+    "up": "Up",
+    "down": "Down",
+    "distanceModel": "Distance Model",
+    "rolloff": "Rolloff Factor",
+    "reset": "Reset to Center"
+  },
+  "library": {
+    "title": "Sample Library",
+    "import": "Import Samples",
+    "folder": "Folder",
+    "tags": "Tags",
+    "bpm": "BPM",
+    "duration": "Duration",
+    "favorite": "Favorite",
+    "preview": "Preview",
+    "addToProject": "Use Sample"
+  },
+  "freesound": {
+    "title": "Freesound Browser",
+    "apiKey": "API Key",
+    "search": "Search Freesound...",
+    "download": "Download Preview",
+    "viewOnFreesound": "View on Freesound",
+    "noApiKey": "To use Freesound, you need an API key.",
+    "getApiKey": "Get your free API key at freesound.org"
+  },
+  "templates": {
+    "title": "Templates",
+    "save": "Save as Template",
+    "load": "Load Template",
+    "name": "Template Name",
+    "description": "Description",
+    "category": "Category",
+    "categories": {
+      "beat": "Beat",
+      "melody": "Melody",
+      "full": "Full Track",
+      "other": "Other"
+    }
+  },
+  "revisions": {
+    "title": "Revision History",
+    "create": "Create Snapshot",
+    "restore": "Restore",
+    "preview": "Preview",
+    "delete": "Delete",
+    "noRevisions": "No revisions yet",
+    "createFirst": "Create a snapshot to save the current state"
+  },
+  "midi": {
+    "title": "MIDI Settings",
+    "input": "MIDI Input",
+    "noDevices": "No MIDI devices found",
+    "learn": "MIDI Learn",
+    "stopLearn": "Stop Learning",
+    "assigned": "Assigned to CC {cc}"
+  },
+  "recording": {
+    "title": "Recording",
+    "arm": "Arm",
+    "disarm": "Disarm",
+    "monitor": "Monitor",
+    "countIn": "Count-in",
+    "bars": "bars",
+    "punchIn": "Punch In",
+    "punchOut": "Punch Out"
+  },
+  "analysis": {
+    "title": "Audio Analysis",
+    "spectrum": "Spectrum",
+    "spectrogram": "Spectrogram",
+    "detectBpm": "Detect BPM",
+    "detectPitch": "Detect Pitch",
+    "autoSlice": "Auto-Slice"
+  },
+  "errors": {
+    "audioContextSuspended": "Click anywhere to enable audio",
+    "corruptedFile": "Could not load project: file is corrupted",
+    "sampleTooLarge": "Sample exceeds maximum size of {maxSize}MB",
+    "midiAccessDenied": "MIDI access denied",
+    "microphoneAccessDenied": "Microphone access denied",
+    "browserNotSupported": "Your browser does not support this feature",
+    "networkError": "Network error. Please check your connection."
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "loading": "Loading...",
+    "noResults": "No results",
+    "all": "All",
+    "none": "None",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "on": "On",
+    "off": "Off",
+    "yes": "Yes",
+    "no": "No",
+    "done": "Done",
+    "apply": "Apply",
+    "reset": "Reset"
+  }
+}

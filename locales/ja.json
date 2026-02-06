@@ -1,0 +1,193 @@
+{
+  "app": {
+    "title": "SoundSculpt",
+    "tagline": "ブラウザベースのオーディオ作曲"
+  },
+  "transport": {
+    "play": "再生",
+    "stop": "停止",
+    "pause": "一時停止",
+    "record": "録音",
+    "loop": "ループ",
+    "bpm": "BPM",
+    "timeSig": "拍子"
+  },
+  "views": {
+    "sequencer": "シーケンサー",
+    "pianoRoll": "ピアノロール",
+    "score": "楽譜",
+    "patch": "パッチ",
+    "code": "コード"
+  },
+  "voice": {
+    "mute": "ミュート",
+    "solo": "ソロ",
+    "volume": "音量",
+    "pan": "パン",
+    "add": "トラックを追加",
+    "remove": "削除",
+    "rename": "名前を変更",
+    "duplicate": "複製",
+    "armed": "録音待機",
+    "monitoring": "モニタリング"
+  },
+  "file": {
+    "new": "新規プロジェクト",
+    "open": "開く",
+    "save": "保存",
+    "saveAs": "名前を付けて保存",
+    "export": {
+      "wav": "WAVをエクスポート",
+      "midi": "MIDIをエクスポート",
+      "musicxml": "MusicXMLをエクスポート"
+    },
+    "import": "インポート",
+    "unsavedWarning": "保存されていない変更があります。それでも終了しますか？",
+    "autoSaved": "自動保存済み"
+  },
+  "welcome": {
+    "generate": "音楽を生成",
+    "generateDesc": "AIに出発点を作成させる",
+    "blank": "ゼロから始める",
+    "blankDesc": "空のプロジェクト",
+    "load": "プロジェクトを読み込む",
+    "loadDesc": ".soundsculptファイルを開く",
+    "recent": "最近のプロジェクト",
+    "recoverDraft": "未保存の作業を復元しますか？"
+  },
+  "generation": {
+    "title": "音楽を生成",
+    "style": "スタイル",
+    "duration": "長さ",
+    "energy": "エネルギー",
+    "template": "テンプレート",
+    "generate": "生成",
+    "preview": "プレビュー"
+  },
+  "settings": {
+    "title": "設定",
+    "language": "言語",
+    "autoSave": "自動保存",
+    "autoSaveInterval": "自動保存の間隔",
+    "minutes": "分",
+    "scale": "スケール",
+    "quantize": "スケールにクオンタイズ"
+  },
+  "spatial": {
+    "title": "空間パンナー",
+    "mode": "モード",
+    "stereo": "シンプルステレオ",
+    "hrtf": "3D HRTF",
+    "position": "位置",
+    "height": "高さ",
+    "front": "前",
+    "back": "後",
+    "left": "左",
+    "right": "右",
+    "up": "上",
+    "down": "下",
+    "distanceModel": "距離モデル",
+    "rolloff": "ロールオフ係数",
+    "reset": "中央にリセット"
+  },
+  "library": {
+    "title": "サンプルライブラリ",
+    "import": "サンプルをインポート",
+    "folder": "フォルダ",
+    "tags": "タグ",
+    "bpm": "BPM",
+    "duration": "長さ",
+    "favorite": "お気に入り",
+    "preview": "プレビュー",
+    "addToProject": "サンプルを使用"
+  },
+  "freesound": {
+    "title": "Freesoundブラウザ",
+    "apiKey": "APIキー",
+    "search": "Freesoundを検索...",
+    "download": "プレビューをダウンロード",
+    "viewOnFreesound": "Freesoundで見る",
+    "noApiKey": "Freesoundを使用するには、APIキーが必要です。",
+    "getApiKey": "freesound.orgで無料のAPIキーを取得してください"
+  },
+  "templates": {
+    "title": "テンプレート",
+    "save": "テンプレートとして保存",
+    "load": "テンプレートを読み込む",
+    "name": "テンプレート名",
+    "description": "説明",
+    "category": "カテゴリ",
+    "categories": {
+      "beat": "ビート",
+      "melody": "メロディ",
+      "full": "フルトラック",
+      "other": "その他"
+    }
+  },
+  "revisions": {
+    "title": "リビジョン履歴",
+    "create": "スナップショットを作成",
+    "restore": "復元",
+    "preview": "プレビュー",
+    "delete": "削除",
+    "noRevisions": "まだリビジョンがありません",
+    "createFirst": "スナップショットを作成して現在の状態を保存してください"
+  },
+  "midi": {
+    "title": "MIDI設定",
+    "input": "MIDI入力",
+    "noDevices": "MIDIデバイスが見つかりません",
+    "learn": "MIDIラーン",
+    "stopLearn": "ラーンを停止",
+    "assigned": "CC {cc}に割り当て済み"
+  },
+  "recording": {
+    "title": "録音",
+    "arm": "録音待機",
+    "disarm": "待機解除",
+    "monitor": "モニター",
+    "countIn": "カウントイン",
+    "bars": "小節",
+    "punchIn": "パンチイン",
+    "punchOut": "パンチアウト"
+  },
+  "analysis": {
+    "title": "オーディオ分析",
+    "spectrum": "スペクトル",
+    "spectrogram": "スペクトログラム",
+    "detectBpm": "BPMを検出",
+    "detectPitch": "ピッチを検出",
+    "autoSlice": "オートスライス"
+  },
+  "errors": {
+    "audioContextSuspended": "オーディオを有効にするには、どこかをクリックしてください",
+    "corruptedFile": "プロジェクトを読み込めませんでした：ファイルが破損しています",
+    "sampleTooLarge": "サンプルが最大サイズ{maxSize}MBを超えています",
+    "midiAccessDenied": "MIDIアクセスが拒否されました",
+    "microphoneAccessDenied": "マイクへのアクセスが拒否されました",
+    "browserNotSupported": "お使いのブラウザはこの機能をサポートしていません",
+    "networkError": "ネットワークエラー。接続を確認してください。"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "search": "検索",
+    "loading": "読み込み中...",
+    "noResults": "結果がありません",
+    "all": "すべて",
+    "none": "なし",
+    "enabled": "有効",
+    "disabled": "無効",
+    "on": "オン",
+    "off": "オフ",
+    "yes": "はい",
+    "no": "いいえ",
+    "done": "完了",
+    "apply": "適用",
+    "reset": "リセット"
+  }
+}

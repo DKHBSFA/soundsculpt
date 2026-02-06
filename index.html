@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundSculpt</title>
+
+  <!-- Design System Tokens -->
+  <link rel="stylesheet" href=".ui-craft/tokens.css">
+
+  <!-- Google Fonts (as per design system) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Application Styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Accessibility Styles -->
+  <link rel="stylesheet" href="a11y.css">
+
+  <!-- VexFlow for music notation (Score View) -->
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
+
+  <!-- CodeMirror 6 for Code Editor (Phase 5) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "codemirror": "https://esm.sh/codemirror@6.0.1",
+        "@codemirror/lang-javascript": "https://esm.sh/@codemirror/lang-javascript@6.2.2",
+        "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2",
+        "@codemirror/view": "https://esm.sh/@codemirror/view@6.26.3",
+        "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1",
+        "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.5.0",
+        "@codemirror/autocomplete": "https://esm.sh/@codemirror/autocomplete@6.16.0",
+        "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.1",
+        "@strudel/core": "https://esm.sh/@strudel/core@1.1.0",
+        "@strudel/mini": "https://esm.sh/@strudel/mini@1.1.0",
+        "@strudel/webaudio": "https://esm.sh/@strudel/webaudio@1.1.0"
+      }
+    }
+  </script>
+
+  <!-- WaveSurfer.js for waveform preview (Phase 5) -->
+  <script src="https://unpkg.com/wavesurfer.js@7"></script>
+</head>
+<body>
+  <!-- Skip Links for Keyboard Navigation -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <a href="#voice-panel" class="skip-link">Skip to voice panel</a>
+  <a href="#transport" class="skip-link">Skip to transport controls</a>
+
+  <!-- Audio Context Overlay (shown when context suspended) -->
+  <div id="audio-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="audio-overlay-title">
+    <div class="overlay-content glass-panel">
+      <h2 id="audio-overlay-title">Click to Enable Audio</h2>
+      <p>Browser requires user interaction to enable audio playback.</p>
+      <button id="enable-audio-btn" class="btn btn-primary">Enable Audio</button>
+    </div>
+  </div>
+
+  <!-- Welcome Screen -->
+  <div id="welcome-screen" class="screen" role="region" aria-label="Welcome">
+    <header class="welcome-header">
+      <h1 class="welcome-title">SoundSculpt</h1>
+      <p class="welcome-tagline">Programmatic Audio Composition</p>
+    </header>
+
+    <main class="welcome-main" role="main">
+      <div class="welcome-options" role="group" aria-label="Create new project">
+        <button id="btn-generate" class="welcome-btn glass-panel" aria-describedby="btn-generate-desc">
+          <span class="welcome-btn-icon" aria-hidden="true">🎲</span>
+          <span class="welcome-btn-title">Generate Music</span>
+          <span id="btn-generate-desc" class="welcome-btn-desc">Choose a style and generate</span>
+        </button>
+
+        <button id="btn-new" class="welcome-btn glass-panel" aria-describedby="btn-new-desc">
+          <span class="welcome-btn-icon" aria-hidden="true">📝</span>
+          <span class="welcome-btn-title">Start from Scratch</span>
+          <span id="btn-new-desc" class="welcome-btn-desc">Blank canvas</span>
+        </button>
+      </div>
+
+      <div class="welcome-divider" aria-hidden="true">
+        <span>or</span>
+      </div>
+
+      <div class="welcome-load" role="group" aria-label="Load existing project">
+        <button id="btn-load" class="btn btn-ghost">Load Project</button>
+        <p class="drop-hint" id="drop-hint">(or drag & drop .soundsculpt file)</p>
+      </div>
+
+      <nav id="recent-projects" class="recent-projects hidden" aria-label="Recent projects">
+        <h3>Recent</h3>
+        <ul id="recent-list" role="list"></ul>
+      </nav>
+    </main>
+  </div>
+
+  <!-- Main Application -->
+  <div id="app-screen" class="screen hidden">
+    <!-- Header / Toolbar -->
+    <header id="app-header" role="banner">
+      <div class="header-left">
+        <nav class="menu-bar" role="menubar" aria-label="Main menu">
+          <button class="menu-btn" data-menu="file" role="menuitem" aria-haspopup="true" aria-expanded="false">File</button>
+          <button class="menu-btn" data-menu="edit" role="menuitem" aria-haspopup="true" aria-expanded="false">Edit</button>
+          <button class="menu-btn" data-menu="view" role="menuitem" aria-haspopup="true" aria-expanded="false">View</button>
+        </nav>
+      </div>
+
+      <div class="header-center">
+        <span class="app-title" aria-hidden="true">SOUNDSCULPT</span>
+        <span id="project-name" class="project-name" aria-live="polite">Untitled</span>
+        <span class="sr-only">Project name:</span>
+      </div>
+
+      <div class="header-right">
+        <div id="transport" class="transport" role="group" aria-label="Transport controls">
+          <button id="btn-play" class="btn-transport" title="Play (Space)" aria-label="Play" aria-pressed="false">
+            <span aria-hidden="true">▶</span>
+          </button>
+          <button id="btn-stop" class="btn-transport" title="Stop (Enter)" aria-label="Stop">
+            <span aria-hidden="true">■</span>
+          </button>
+          <button id="btn-record" class="btn-transport" title="Record (R)" aria-label="Record" aria-pressed="false">
+            <span aria-hidden="true">⏺</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- View Tabs -->
+    <nav id="view-tabs" aria-label="Editor views">
+      <div class="view-tabs-left" role="tablist" aria-label="Select view">
+        <button class="view-tab active" data-view="sequencer" role="tab" aria-selected="true" aria-controls="view-sequencer" id="tab-sequencer">Sequencer</button>
+        <button class="view-tab" data-view="piano-roll" role="tab" aria-selected="false" aria-controls="view-piano-roll" id="tab-piano-roll">Piano Roll</button>
+        <button class="view-tab" data-view="score" role="tab" aria-selected="false" aria-controls="view-score" id="tab-score">Score</button>
+        <button class="view-tab" data-view="patch" role="tab" aria-selected="false" aria-controls="view-patch" id="tab-patch">Patch</button>
+        <button class="view-tab" data-view="code" role="tab" aria-selected="false" aria-controls="view-code" id="tab-code">Code</button>
+      </div>
+      <div class="view-tabs-right" role="group" aria-label="Transport settings">
+        <div class="transport-info-item">
+          <label for="bpm-input" class="transport-label">BPM</label>
+          <input type="number" id="bpm-input" class="input-number" value="120" min="20" max="300" aria-describedby="bpm-desc">
+          <span id="bpm-desc" class="sr-only">Beats per minute, range 20 to 300</span>
+        </div>
+        <div class="transport-info-item">
+          <span class="transport-label" id="time-label">Time</span>
+          <span id="time-display" class="transport-value" aria-labelledby="time-label">4/4</span>
+        </div>
+        <div class="scale-controls transport-info-item" role="group" aria-label="Scale settings">
+          <span class="transport-label" id="scale-label">Scale</span>
+          <label for="scale-root" class="sr-only">Scale root note</label>
+          <select id="scale-root" class="select-small scale-root-select" aria-label="Scale Root">
+            <option value="C">C</option>
+            <option value="C#">C#</option>
+            <option value="D">D</option>
+            <option value="D#">D#</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="F#">F#</option>
+            <option value="G">G</option>
+            <option value="G#">G#</option>
+            <option value="A">A</option>
+            <option value="A#">A#</option>
+            <option value="B">B</option>
+          </select>
+          <label for="scale-type" class="sr-only">Scale type</label>
+          <select id="scale-type" class="select-small scale-type-select" aria-label="Scale Type">
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+            <option value="harmonic-minor">Harm. Minor</option>
+            <option value="melodic-minor">Mel. Minor</option>
+            <option value="dorian">Dorian</option>
+            <option value="phrygian">Phrygian</option>
+            <option value="lydian">Lydian</option>
+            <option value="mixolydian">Mixolydian</option>
+            <option value="major-pentatonic">Pent. Maj</option>
+            <option value="minor-pentatonic">Pent. Min</option>
+            <option value="blues">Blues</option>
+            <option value="chromatic">Chromatic</option>
+          </select>
+          <button id="btn-quantize" class="btn-toggle-sm" title="Quantize input to scale" aria-label="Toggle scale quantization" aria-pressed="false">Q</button>
+          <button id="btn-chord-palette" class="btn-icon-sm" title="Chord Palette" aria-label="Open chord palette" aria-haspopup="dialog">
+            <span aria-hidden="true">⌘</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div id="main-content">
+      <!-- Voice Panel (Left Sidebar) -->
+      <aside id="voice-panel" class="glass-panel" aria-label="Voice panel">
+        <div class="voice-panel-header">
+          <h3 class="voice-panel-title" id="voice-panel-title">Voices</h3>
+          <button id="btn-add-voice" class="btn-icon" title="Add Voice" aria-label="Add new voice">
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
+        <div id="voice-list" role="listbox" aria-labelledby="voice-panel-title" aria-multiselectable="false"></div>
+        <div class="voice-panel-footer" aria-hidden="true">
+          <span class="legend-item"><kbd>S</kbd> Solo</span>
+          <span class="legend-item"><kbd>M</kbd> Mute</span>
+        </div>
+      </aside>
+
+      <!-- View Container -->
+      <main id="view-container" aria-label="Editor workspace">
+        <div id="view-sequencer" class="view active" role="tabpanel" aria-labelledby="tab-sequencer" tabindex="0"></div>
+        <div id="view-piano-roll" class="view hidden" role="tabpanel" aria-labelledby="tab-piano-roll" tabindex="0"></div>
+        <div id="view-score" class="view hidden" role="tabpanel" aria-labelledby="tab-score" tabindex="0"></div>
+        <div id="view-patch" class="view hidden" role="tabpanel" aria-labelledby="tab-patch" tabindex="0"></div>
+        <div id="view-code" class="view hidden" role="tabpanel" aria-labelledby="tab-code" tabindex="0"></div>
+      </main>
+    </div>
+
+    <!-- Footer / Transport Bar -->
+    <footer id="app-footer" role="contentinfo">
+      <div class="footer-left" role="group" aria-label="Navigation controls">
+        <button class="btn-transport-sm" title="Go to start (Home)" aria-label="Go to start">
+          <span aria-hidden="true">|◀</span>
+        </button>
+        <button class="btn-transport-sm" title="Go to end (End)" aria-label="Go to end">
+          <span aria-hidden="true">▶|</span>
+        </button>
+      </div>
+      <div class="footer-center" role="group" aria-label="Timeline">
+        <span id="position-display" class="position-display" aria-live="polite" aria-label="Current position">1.1.1</span>
+        <div class="timeline-bar">
+          <div id="playhead" class="playhead" aria-hidden="true"></div>
+          <label for="timeline-slider" class="sr-only">Timeline position</label>
+          <input type="range" id="timeline-slider" class="timeline-slider" min="0" max="100" value="0" aria-label="Seek timeline">
+        </div>
+        <label class="loop-toggle">
+          <input type="checkbox" id="loop-checkbox" aria-describedby="loop-desc">
+          <span>Loop</span>
+        </label>
+        <span id="loop-desc" class="sr-only">Enable looping playback</span>
+      </div>
+      <div class="footer-right" role="group" aria-label="Status">
+        <div id="master-meter" class="meter-container" role="meter" aria-label="Master volume level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="meter" aria-hidden="true">
+            <div class="meter-fill" id="master-meter-fill"></div>
+            <div class="meter-peak" id="master-meter-peak"></div>
+          </div>
+          <span class="meter-label" id="master-meter-label">Master</span>
+        </div>
+        <span id="unsaved-indicator" class="unsaved-indicator hidden" title="Unsaved changes" aria-live="polite" role="status">
+          <span aria-hidden="true">●</span>
+          <span class="sr-only">Unsaved changes</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Dropdown Menus -->
+  <div id="dropdown-menus" class="dropdown-container hidden">
+    <div id="menu-file" class="dropdown-menu glass-panel hidden" role="menu" aria-label="File menu">
+      <button data-action="save" role="menuitem">Save Project <kbd aria-hidden="true">Ctrl+S</kbd></button>
+      <button data-action="load" role="menuitem">Load Project <kbd aria-hidden="true">Ctrl+O</kbd></button>
+      <button data-action="share" role="menuitem">Share URL</button>
+      <hr role="separator">
+      <button data-action="export-wav" role="menuitem">Export WAV</button>
+      <button data-action="export-midi" role="menuitem">Export MIDI</button>
+      <hr role="separator">
+      <button data-action="settings" role="menuitem">Auto-save Settings...</button>
+    </div>
+    <div id="menu-edit" class="dropdown-menu glass-panel hidden" role="menu" aria-label="Edit menu">
+      <button data-action="undo" role="menuitem">Undo <kbd aria-hidden="true">Ctrl+Z</kbd></button>
+      <button data-action="redo" role="menuitem">Redo <kbd aria-hidden="true">Ctrl+Y</kbd></button>
+      <hr role="separator">
+      <button data-action="select-all" role="menuitem">Select All <kbd aria-hidden="true">Ctrl+A</kbd></button>
+      <button data-action="delete" role="menuitem">Delete <kbd aria-hidden="true">Del</kbd></button>
+      <hr role="separator">
+      <button data-action="copy" role="menuitem">Copy <kbd aria-hidden="true">Ctrl+C</kbd></button>
+      <button data-action="paste" role="menuitem">Paste <kbd aria-hidden="true">Ctrl+V</kbd></button>
+      <button data-action="duplicate" role="menuitem">Duplicate <kbd aria-hidden="true">Ctrl+D</kbd></button>
+    </div>
+    <div id="menu-view" class="dropdown-menu glass-panel hidden" role="menu" aria-label="View menu">
+      <button data-action="view-sequencer" role="menuitem">Sequencer <kbd aria-hidden="true">1</kbd></button>
+      <button data-action="view-piano-roll" role="menuitem">Piano Roll <kbd aria-hidden="true">2</kbd></button>
+      <button data-action="view-score" role="menuitem">Score <kbd aria-hidden="true">3</kbd></button>
+      <button data-action="view-patch" role="menuitem">Patch <kbd aria-hidden="true">4</kbd></button>
+      <button data-action="view-code" role="menuitem">Code <kbd aria-hidden="true">5</kbd></button>
+      <hr role="separator">
+      <button data-action="zoom-in" role="menuitem">Zoom In <kbd aria-hidden="true">Ctrl++</kbd></button>
+      <button data-action="zoom-out" role="menuitem">Zoom Out <kbd aria-hidden="true">Ctrl+-</kbd></button>
+      <button data-action="zoom-reset" role="menuitem">Reset Zoom <kbd aria-hidden="true">Ctrl+0</kbd></button>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <!-- Recovery Modal -->
+  <div id="recovery-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="recovery-modal-title">
+    <div class="modal-content glass-panel">
+      <h2 id="recovery-modal-title">Recover Unsaved Work?</h2>
+      <p id="recovery-modal-desc">A draft was found from a previous session. Would you like to recover it?</p>
+      <div class="modal-actions">
+        <button id="btn-recover" class="btn btn-primary">Recover</button>
+        <button id="btn-discard" class="btn btn-ghost">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generation Modal -->
+  <div id="generation-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="generation-modal-title">
+    <div class="modal-content modal-large glass-panel">
+      <header class="generation-header">
+        <h2 id="generation-modal-title">Generate Music</h2>
+        <button id="btn-close-generation" class="btn-icon" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </header>
+
+      <div class="generation-body">
+        <!-- Style Selection -->
+        <section class="generation-section" aria-labelledby="style-section-title">
+          <h3 class="generation-section-title" id="style-section-title">Style</h3>
+          <div id="style-grid" class="style-grid" role="radiogroup" aria-labelledby="style-section-title">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+
+        <!-- Template Selection (optional) -->
+        <section class="generation-section" aria-labelledby="template-section-title">
+          <h3 class="generation-section-title" id="template-section-title">
+            Template <span class="optional-badge" aria-label="optional">optional</span>
+          </h3>
+          <div id="template-grid" class="template-grid" role="radiogroup" aria-labelledby="template-section-title">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+
+        <!-- Parameters -->
+        <section class="generation-section generation-params" aria-label="Generation parameters">
+          <div class="param-group" role="group" aria-labelledby="duration-label">
+            <span class="param-label" id="duration-label">Duration</span>
+            <div class="param-buttons" id="duration-buttons" role="radiogroup" aria-labelledby="duration-label">
+              <button class="param-btn" data-duration="15" role="radio" aria-checked="false">15s</button>
+              <button class="param-btn active" data-duration="30" role="radio" aria-checked="true">30s</button>
+              <button class="param-btn" data-duration="60" role="radio" aria-checked="false">60s</button>
+              <button class="param-btn" data-duration="custom" role="radio" aria-checked="false">Custom</button>
+            </div>
+            <label for="custom-duration" class="sr-only">Custom duration in bars</label>
+            <input type="number" id="custom-duration" class="input-number hidden" placeholder="bars" min="4" max="128" value="16" aria-describedby="custom-duration-desc">
+            <span id="custom-duration-desc" class="sr-only">Enter duration in bars, 4 to 128</span>
+          </div>
+
+          <div class="param-group" role="group" aria-labelledby="energy-label">
+            <span class="param-label" id="energy-label">Energy</span>
+            <div class="energy-slider-container">
+              <span class="energy-label" aria-hidden="true">Low</span>
+              <label for="energy-slider" class="sr-only">Energy level</label>
+              <input type="range" id="energy-slider" class="energy-slider" min="0" max="100" value="70" aria-describedby="energy-value">
+              <span class="energy-label" aria-hidden="true">High</span>
+            </div>
+            <span id="energy-value" class="energy-value" aria-live="polite">70%</span>
+          </div>
+        </section>
+      </div>
+
+      <footer class="generation-footer">
+        <div class="generation-preview">
+          <span id="generation-summary" class="generation-summary" aria-live="polite">Electronic &bull; 30s &bull; 70% energy</span>
+        </div>
+        <div class="generation-actions">
+          <button id="btn-cancel-generation" class="btn btn-ghost">Cancel</button>
+          <button id="btn-generate-music" class="btn btn-primary">Generate</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Chord Palette Modal (Fase 8) -->
+  <div id="chord-palette-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="chord-palette-title">
+    <div class="modal-content modal-medium glass-panel">
+      <header class="chord-palette-header">
+        <h2 id="chord-palette-title">Chord Palette</h2>
+        <div class="chord-palette-scale">
+          <span id="chord-palette-scale-display" aria-live="polite">C Major</span>
+        </div>
+        <button id="btn-close-chord-palette" class="btn-icon" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </header>
+
+      <div class="chord-palette-body">
+        <!-- Diatonic Triads -->
+        <section class="chord-section" aria-labelledby="diatonic-triads-title">
+          <h3 class="chord-section-title" id="diatonic-triads-title">Diatonic Triads</h3>
+          <div id="diatonic-triads" class="chord-grid" role="group" aria-label="Diatonic triad chords">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+
+        <!-- Diatonic Seventh Chords -->
+        <section class="chord-section" aria-labelledby="diatonic-sevenths-title">
+          <h3 class="chord-section-title" id="diatonic-sevenths-title">Seventh Chords</h3>
+          <div id="diatonic-sevenths" class="chord-grid" role="group" aria-label="Seventh chords">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+
+        <!-- Common Chords -->
+        <section class="chord-section" aria-labelledby="common-chords-title">
+          <h3 class="chord-section-title" id="common-chords-title">Common Chords</h3>
+          <div class="chord-grid" id="common-chords" role="group" aria-label="Common chord types">
+            <!-- Quick access: sus2, sus4, add9, power chord -->
+          </div>
+        </section>
+
+        <!-- Arpeggiator -->
+        <section class="chord-section arp-section" aria-labelledby="arp-section-title">
+          <h3 class="chord-section-title" id="arp-section-title">
+            Arpeggiator
+            <label class="arp-toggle">
+              <input type="checkbox" id="arp-enabled" aria-describedby="arp-section-title">
+              <span class="toggle-slider" aria-hidden="true"></span>
+              <span class="sr-only">Enable arpeggiator</span>
+            </label>
+          </h3>
+          <div class="arp-controls" id="arp-controls" role="group" aria-label="Arpeggiator settings">
+            <div class="arp-control">
+              <label for="arp-pattern">Pattern</label>
+              <select id="arp-pattern" class="select-small">
+                <option value="up">Up</option>
+                <option value="down">Down</option>
+                <option value="updown">Up/Down</option>
+                <option value="downup">Down/Up</option>
+                <option value="random">Random</option>
+                <option value="as-played">As Played</option>
+              </select>
+            </div>
+            <div class="arp-control">
+              <label for="arp-octaves">Octaves</label>
+              <select id="arp-octaves" class="select-small">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div class="arp-control">
+              <label for="arp-rate">Rate</label>
+              <select id="arp-rate" class="select-small">
+                <option value="1/4">1/4</option>
+                <option value="1/8" selected>1/8</option>
+                <option value="1/16">1/16</option>
+                <option value="1/32">1/32</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Voice Leading Suggestions -->
+        <section class="chord-section" id="voice-leading-section" aria-labelledby="suggestions-title">
+          <h3 class="chord-section-title" id="suggestions-title">Suggestions</h3>
+          <div id="chord-suggestions" class="chord-suggestions" role="group" aria-label="Chord suggestions" aria-live="polite">
+            <span class="suggestion-hint">Play a chord to see suggestions</span>
+          </div>
+        </section>
+      </div>
+
+      <footer class="chord-palette-footer" role="group" aria-label="Insertion options">
+        <div class="insertion-options">
+          <label for="chord-insert-position">Insert at:</label>
+          <select id="chord-insert-position" class="select-small">
+            <option value="playhead">Playhead</option>
+            <option value="end">End</option>
+            <option value="next-beat">Next Beat</option>
+          </select>
+          <label for="chord-duration">Duration:</label>
+          <select id="chord-duration" class="select-small">
+            <option value="1">1 beat</option>
+            <option value="2">2 beats</option>
+            <option value="4" selected>1 bar</option>
+            <option value="8">2 bars</option>
+          </select>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Hidden file input for loading projects -->
+  <label for="file-input" class="sr-only">Load project file</label>
+  <input type="file" id="file-input" accept=".soundsculpt,.json" hidden aria-describedby="file-input-desc">
+  <span id="file-input-desc" class="sr-only">Select a .soundsculpt or .json project file to load</span>
+
+  <!-- Live region for status announcements -->
+  <div id="live-status" role="status" aria-live="polite" class="sr-only"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

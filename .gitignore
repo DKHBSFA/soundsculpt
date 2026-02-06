@@ -1,0 +1,21 @@
+# Claude framework (private)
+.claude/
+.ui-craft/
+CLAUDE.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Dependencies
+node_modules/
+
+# Reference code (not part of the project)
+remotion/

@@ -1,0 +1,193 @@
+{
+  "app": {
+    "title": "SoundSculpt",
+    "tagline": "Composition audio dans le navigateur"
+  },
+  "transport": {
+    "play": "Lecture",
+    "stop": "Arret",
+    "pause": "Pause",
+    "record": "Enregistrer",
+    "loop": "Boucle",
+    "bpm": "BPM",
+    "timeSig": "Signature rythmique"
+  },
+  "views": {
+    "sequencer": "Sequenceur",
+    "pianoRoll": "Piano Roll",
+    "score": "Partition",
+    "patch": "Patch",
+    "code": "Code"
+  },
+  "voice": {
+    "mute": "Muet",
+    "solo": "Solo",
+    "volume": "Volume",
+    "pan": "Balance",
+    "add": "Ajouter une piste",
+    "remove": "Supprimer",
+    "rename": "Renommer",
+    "duplicate": "Dupliquer",
+    "armed": "Armee",
+    "monitoring": "Ecoute"
+  },
+  "file": {
+    "new": "Nouveau projet",
+    "open": "Ouvrir",
+    "save": "Enregistrer",
+    "saveAs": "Enregistrer sous",
+    "export": {
+      "wav": "Exporter en WAV",
+      "midi": "Exporter en MIDI",
+      "musicxml": "Exporter en MusicXML"
+    },
+    "import": "Importer",
+    "unsavedWarning": "Vous avez des modifications non enregistrees. Quitter quand meme?",
+    "autoSaved": "Enregistrement automatique"
+  },
+  "welcome": {
+    "generate": "Generer de la musique",
+    "generateDesc": "Laissez l'IA creer un point de depart",
+    "blank": "Partir de zero",
+    "blankDesc": "Projet vide",
+    "load": "Charger un projet",
+    "loadDesc": "Ouvrir un fichier .soundsculpt",
+    "recent": "Projets recents",
+    "recoverDraft": "Recuperer le travail non enregistre?"
+  },
+  "generation": {
+    "title": "Generer de la musique",
+    "style": "Style",
+    "duration": "Duree",
+    "energy": "Energie",
+    "template": "Modele",
+    "generate": "Generer",
+    "preview": "Apercu"
+  },
+  "settings": {
+    "title": "Parametres",
+    "language": "Langue",
+    "autoSave": "Sauvegarde automatique",
+    "autoSaveInterval": "Intervalle de sauvegarde automatique",
+    "minutes": "minutes",
+    "scale": "Gamme",
+    "quantize": "Quantifier a la gamme"
+  },
+  "spatial": {
+    "title": "Panoramique spatial",
+    "mode": "Mode",
+    "stereo": "Stereo simple",
+    "hrtf": "3D HRTF",
+    "position": "Position",
+    "height": "Hauteur",
+    "front": "Avant",
+    "back": "Arriere",
+    "left": "Gauche",
+    "right": "Droite",
+    "up": "Haut",
+    "down": "Bas",
+    "distanceModel": "Modele de distance",
+    "rolloff": "Facteur d'attenuation",
+    "reset": "Reinitialiser au centre"
+  },
+  "library": {
+    "title": "Bibliotheque d'echantillons",
+    "import": "Importer des echantillons",
+    "folder": "Dossier",
+    "tags": "Tags",
+    "bpm": "BPM",
+    "duration": "Duree",
+    "favorite": "Favori",
+    "preview": "Apercu",
+    "addToProject": "Utiliser l'echantillon"
+  },
+  "freesound": {
+    "title": "Navigateur Freesound",
+    "apiKey": "Cle API",
+    "search": "Rechercher sur Freesound...",
+    "download": "Telecharger l'apercu",
+    "viewOnFreesound": "Voir sur Freesound",
+    "noApiKey": "Pour utiliser Freesound, vous avez besoin d'une cle API.",
+    "getApiKey": "Obtenez votre cle API gratuite sur freesound.org"
+  },
+  "templates": {
+    "title": "Modeles",
+    "save": "Enregistrer comme modele",
+    "load": "Charger un modele",
+    "name": "Nom du modele",
+    "description": "Description",
+    "category": "Categorie",
+    "categories": {
+      "beat": "Rythme",
+      "melody": "Melodie",
+      "full": "Piste complete",
+      "other": "Autre"
+    }
+  },
+  "revisions": {
+    "title": "Historique des revisions",
+    "create": "Creer un instantane",
+    "restore": "Restaurer",
+    "preview": "Apercu",
+    "delete": "Supprimer",
+    "noRevisions": "Pas encore de revisions",
+    "createFirst": "Creez un instantane pour sauvegarder l'etat actuel"
+  },
+  "midi": {
+    "title": "Parametres MIDI",
+    "input": "Entree MIDI",
+    "noDevices": "Aucun peripherique MIDI trouve",
+    "learn": "Apprentissage MIDI",
+    "stopLearn": "Arreter l'apprentissage",
+    "assigned": "Assigne a CC {cc}"
+  },
+  "recording": {
+    "title": "Enregistrement",
+    "arm": "Armer",
+    "disarm": "Desarmer",
+    "monitor": "Ecoute",
+    "countIn": "Decompte",
+    "bars": "mesures",
+    "punchIn": "Punch In",
+    "punchOut": "Punch Out"
+  },
+  "analysis": {
+    "title": "Analyse audio",
+    "spectrum": "Spectre",
+    "spectrogram": "Spectrogramme",
+    "detectBpm": "Detecter le BPM",
+    "detectPitch": "Detecter la hauteur",
+    "autoSlice": "Decoupage auto"
+  },
+  "errors": {
+    "audioContextSuspended": "Cliquez n'importe ou pour activer l'audio",
+    "corruptedFile": "Impossible de charger le projet: fichier corrompu",
+    "sampleTooLarge": "L'echantillon depasse la taille maximale de {maxSize}Mo",
+    "midiAccessDenied": "Acces MIDI refuse",
+    "microphoneAccessDenied": "Acces au microphone refuse",
+    "browserNotSupported": "Votre navigateur ne prend pas en charge cette fonctionnalite",
+    "networkError": "Erreur reseau. Veuillez verifier votre connexion."
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "noResults": "Aucun resultat",
+    "all": "Tout",
+    "none": "Aucun",
+    "enabled": "Active",
+    "disabled": "Desactive",
+    "on": "Actif",
+    "off": "Inactif",
+    "yes": "Oui",
+    "no": "Non",
+    "done": "Termine",
+    "apply": "Appliquer",
+    "reset": "Reinitialiser"
+  }
+}

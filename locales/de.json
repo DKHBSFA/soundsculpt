@@ -1,0 +1,193 @@
+{
+  "app": {
+    "title": "SoundSculpt",
+    "tagline": "Browserbasierte Audiokomposition"
+  },
+  "transport": {
+    "play": "Wiedergabe",
+    "stop": "Stopp",
+    "pause": "Pause",
+    "record": "Aufnahme",
+    "loop": "Schleife",
+    "bpm": "BPM",
+    "timeSig": "Taktart"
+  },
+  "views": {
+    "sequencer": "Sequenzer",
+    "pianoRoll": "Pianorolle",
+    "score": "Partitur",
+    "patch": "Patch",
+    "code": "Code"
+  },
+  "voice": {
+    "mute": "Stumm",
+    "solo": "Solo",
+    "volume": "Lautstärke",
+    "pan": "Balance",
+    "add": "Stimme hinzufügen",
+    "remove": "Entfernen",
+    "rename": "Umbenennen",
+    "duplicate": "Duplizieren",
+    "armed": "Aufnahmebereit",
+    "monitoring": "Monitoring"
+  },
+  "file": {
+    "new": "Neues Projekt",
+    "open": "Öffnen",
+    "save": "Speichern",
+    "saveAs": "Speichern unter",
+    "export": {
+      "wav": "Als WAV exportieren",
+      "midi": "Als MIDI exportieren",
+      "musicxml": "Als MusicXML exportieren"
+    },
+    "import": "Importieren",
+    "unsavedWarning": "Sie haben ungespeicherte Änderungen. Trotzdem verlassen?",
+    "autoSaved": "Automatisch gespeichert"
+  },
+  "welcome": {
+    "generate": "Musik generieren",
+    "generateDesc": "KI erstellt einen Ausgangspunkt",
+    "blank": "Von vorne beginnen",
+    "blankDesc": "Leeres Projekt",
+    "load": "Projekt laden",
+    "loadDesc": ".soundsculpt-Datei öffnen",
+    "recent": "Letzte Projekte",
+    "recoverDraft": "Ungespeicherte Arbeit wiederherstellen?"
+  },
+  "generation": {
+    "title": "Musik generieren",
+    "style": "Stil",
+    "duration": "Dauer",
+    "energy": "Energie",
+    "template": "Vorlage",
+    "generate": "Generieren",
+    "preview": "Vorschau"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "autoSave": "Automatisch speichern",
+    "autoSaveInterval": "Intervall für automatisches Speichern",
+    "minutes": "Minuten",
+    "scale": "Tonleiter",
+    "quantize": "An Tonleiter quantisieren"
+  },
+  "spatial": {
+    "title": "Räumlicher Panner",
+    "mode": "Modus",
+    "stereo": "Einfaches Stereo",
+    "hrtf": "3D HRTF",
+    "position": "Position",
+    "height": "Höhe",
+    "front": "Vorne",
+    "back": "Hinten",
+    "left": "Links",
+    "right": "Rechts",
+    "up": "Oben",
+    "down": "Unten",
+    "distanceModel": "Entfernungsmodell",
+    "rolloff": "Abklingfaktor",
+    "reset": "Auf Mitte zurücksetzen"
+  },
+  "library": {
+    "title": "Sample-Bibliothek",
+    "import": "Samples importieren",
+    "folder": "Ordner",
+    "tags": "Tags",
+    "bpm": "BPM",
+    "duration": "Dauer",
+    "favorite": "Favorit",
+    "preview": "Vorschau",
+    "addToProject": "Sample verwenden"
+  },
+  "freesound": {
+    "title": "Freesound-Browser",
+    "apiKey": "API-Schlüssel",
+    "search": "Freesound durchsuchen...",
+    "download": "Vorschau herunterladen",
+    "viewOnFreesound": "Auf Freesound ansehen",
+    "noApiKey": "Um Freesound zu nutzen, benötigen Sie einen API-Schlüssel.",
+    "getApiKey": "Holen Sie sich Ihren kostenlosen API-Schlüssel auf freesound.org"
+  },
+  "templates": {
+    "title": "Vorlagen",
+    "save": "Als Vorlage speichern",
+    "load": "Vorlage laden",
+    "name": "Vorlagenname",
+    "description": "Beschreibung",
+    "category": "Kategorie",
+    "categories": {
+      "beat": "Beat",
+      "melody": "Melodie",
+      "full": "Vollständiger Track",
+      "other": "Sonstiges"
+    }
+  },
+  "revisions": {
+    "title": "Versionsverlauf",
+    "create": "Snapshot erstellen",
+    "restore": "Wiederherstellen",
+    "preview": "Vorschau",
+    "delete": "Löschen",
+    "noRevisions": "Noch keine Versionen",
+    "createFirst": "Erstellen Sie einen Snapshot, um den aktuellen Stand zu speichern"
+  },
+  "midi": {
+    "title": "MIDI-Einstellungen",
+    "input": "MIDI-Eingang",
+    "noDevices": "Keine MIDI-Geräte gefunden",
+    "learn": "MIDI-Learn",
+    "stopLearn": "Lernen beenden",
+    "assigned": "Zugewiesen an CC {cc}"
+  },
+  "recording": {
+    "title": "Aufnahme",
+    "arm": "Aufnahmebereit",
+    "disarm": "Deaktivieren",
+    "monitor": "Monitor",
+    "countIn": "Einzählen",
+    "bars": "Takte",
+    "punchIn": "Punch In",
+    "punchOut": "Punch Out"
+  },
+  "analysis": {
+    "title": "Audio-Analyse",
+    "spectrum": "Spektrum",
+    "spectrogram": "Spektrogramm",
+    "detectBpm": "BPM erkennen",
+    "detectPitch": "Tonhöhe erkennen",
+    "autoSlice": "Auto-Slice"
+  },
+  "errors": {
+    "audioContextSuspended": "Klicken Sie irgendwo, um Audio zu aktivieren",
+    "corruptedFile": "Projekt konnte nicht geladen werden: Datei ist beschädigt",
+    "sampleTooLarge": "Sample überschreitet maximale Größe von {maxSize}MB",
+    "midiAccessDenied": "MIDI-Zugriff verweigert",
+    "microphoneAccessDenied": "Mikrofonzugriff verweigert",
+    "browserNotSupported": "Ihr Browser unterstützt diese Funktion nicht",
+    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung."
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "search": "Suchen",
+    "loading": "Wird geladen...",
+    "noResults": "Keine Ergebnisse",
+    "all": "Alle",
+    "none": "Keine",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "on": "An",
+    "off": "Aus",
+    "yes": "Ja",
+    "no": "Nein",
+    "done": "Fertig",
+    "apply": "Anwenden",
+    "reset": "Zurücksetzen"
+  }
+}
