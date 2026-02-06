@@ -1,0 +1,96 @@
+{
+  "template_id": "tech_promo",
+  "display_name": "Tech / Startup Promo",
+  "description": "Clean, optimistic electronic for SaaS, apps, AI demos, and tech product launches",
+  "use_cases": ["SaaS", "startup", "app", "AI demo", "product launch", "explainer"],
+
+  "parameters": {
+    "duration": {
+      "type": "enum",
+      "values": ["15s", "30s", "60s"],
+      "default": "30s"
+    },
+    "energy": {
+      "type": "range",
+      "min": 0.3,
+      "max": 1.0,
+      "default": 0.7
+    },
+    "voiceover": {
+      "type": "bool",
+      "default": false
+    }
+  },
+
+  "base_style": "electronic",
+
+  "duration_adaptations": {
+    "15s": {
+      "arc_strategy": "no_arc",
+      "impact_intensity": 1.0,
+      "bars": 8,
+      "phases": {
+        "impact": [0, 2],
+        "climax": [2, 7],
+        "resolve": [7, 8]
+      }
+    },
+    "30s": {
+      "arc_strategy": "compressed",
+      "impact_intensity": 0.9,
+      "bars": 16,
+      "phases": {
+        "impact": [0, 2],
+        "build": [2, 8],
+        "climax": [8, 14],
+        "resolve": [14, 16]
+      }
+    },
+    "60s": {
+      "arc_strategy": "full",
+      "impact_intensity": 0.8,
+      "bars": 32,
+      "phases": {
+        "impact": [0, 2],
+        "intro": [2, 8],
+        "build": [8, 16],
+        "climax": [16, 28],
+        "resolve": [28, 32]
+      }
+    }
+  },
+
+  "energy_scaling": {
+    "affects": ["velocity_multiplier", "density", "filter_brightness"],
+    "formula": {
+      "velocity_multiplier": "0.5 + (energy * 0.5)",
+      "density": "energy < 0.5 ? 'sparse' : energy < 0.8 ? 'balanced' : 'dense'",
+      "filter_brightness": "1000 + (energy * 3000)"
+    }
+  },
+
+  "voiceover_adaptation": {
+    "if_true": {
+      "apply_mode": "voiceover_bed",
+      "mid_gain_reduction": 0.3
+    }
+  },
+
+  "style_overrides": {
+    "temporal": {
+      "bpm": 120
+    },
+    "key": "A minor",
+    "sounds": {
+      "lead": {
+        "lpf": 2500,
+        "gain": 0.65
+      },
+      "arp": {
+        "lpf": 3000,
+        "delay": 0.3,
+        "gain": 0.7
+      }
+    }
+  }
+}

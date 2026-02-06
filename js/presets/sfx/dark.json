@@ -1,0 +1,59 @@
+{
+  "family": "dark",
+  "description": "Sub-bass rumble, metal scrape, reverse texture, drone burst. Unsettling, dissonant.",
+  "characteristics": {
+    "attack_ms": [10, 400],
+    "decay_ms": [200, 2000],
+    "frequency_range_hz": [30, 3000]
+  },
+  "sounds": {
+    "element-appear": {
+      "label": "Sub pulse",
+      "strudel": "note('c1').s('sawtooth').lpf(200).gain(0.6)",
+      "duration": 200,
+      "velocity": 0.6
+    },
+    "text-typing": {
+      "label": "Glitch stutter",
+      "strudel": "note('f#3').s('sine').fm(20).fmh(11).crush(4).gain(0.2)",
+      "duration": 30,
+      "velocity": 0.2
+    },
+    "number-count": {
+      "label": "Low pulse",
+      "strudel": "note('e2').s('sine').gain(0.35)",
+      "duration": 100,
+      "velocity": 0.35
+    },
+    "card-flip": {
+      "label": "Metal scrape",
+      "strudel": "s('metal').room(0.3).gain(0.45)",
+      "duration": 200,
+      "velocity": 0.45
+    },
+    "scene-transition": {
+      "label": "Drone burst",
+      "strudel": "note('c2').s('sine').fm(1.01).fmh(1).room(0.6).gain(0.5).slow(4)",
+      "duration": 1000,
+      "velocity": 0.5
+    },
+    "cta-final": {
+      "label": "Sub drop + silence",
+      "strudel": "note('c1').s('sawtooth').lpf(150).room(0.4).gain(0.85)",
+      "duration": 300,
+      "velocity": 0.85
+    },
+    "logo-reveal": {
+      "label": "Reverse texture",
+      "strudel": "note('eb3').s('sine').fm(3.01).fmh(1).room(0.55).gain(0.5).slow(2)",
+      "duration": 500,
+      "velocity": 0.5
+    },
+    "stat-progress": {
+      "label": "Growing pulse",
+      "strudel": "note('c2').s('sawtooth').lpf(800).gain(0.35)",
+      "duration": 100,
+      "velocity": 0.35
+    }
+  }
+}

@@ -1,0 +1,215 @@
+{
+  "style": "dnb",
+  "description": "High-energy breakbeat percussion with deep rolling basslines, atmospheric pads, and sharp transients at 174 BPM.",
+  "family": "loop",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(s('RolandTR909_bd').struct('t').gain(1.0), note('f1').s('sawtooth').lpf(200).gain(0.9))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "s('RolandTR909_sd').struct('~ t').gain(0.85).room(0.2)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<f3 ab3 c4 f4>(5,8)').s('sawtooth').lpf(3000).gain(0.75)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass", "kick"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["hihat", "pad"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["snare", "reese"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 174,
+    "range": [170, 180],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "hard_cut",
+      "cadenceBars": 0,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "Fm",
+
+  "sounds": {
+    "kick": {
+      "source": "bd",
+      "bank": "RolandTR909",
+      "gain": 0.9
+    },
+    "snare": {
+      "source": "sd",
+      "bank": "RolandTR909",
+      "room": 0.15,
+      "gain": 0.75
+    },
+    "hihat": {
+      "source": "hh",
+      "bank": "RolandTR909",
+      "hpf": 9000,
+      "gain": 0.5
+    },
+    "bass": {
+      "source": "sawtooth",
+      "lpf": 400,
+      "gain": 0.85
+    },
+    "pad": {
+      "source": "sine",
+      "fm": 1,
+      "fmh": 2,
+      "room": 0.55,
+      "gain": 0.45
+    },
+    "stab": {
+      "source": "square",
+      "fm": 0.5,
+      "delay": 0.25,
+      "room": 0.25,
+      "gain": 0.6
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "s('RolandTR909_hh').struct('t ~ t ~ t ~ t ~ t ~ t ~ t ~ t ~').gain(0.35)",
+      "harmony": "chord('<Fm Db Eb Fm>').voicing().s('sine').fm(1).fmh(2).room(0.55).gain(0.4).slow(8)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "stack(s('RolandTR909_bd').struct('t ~ ~ ~ ~ ~ t/2 ~ ~ ~ ~ ~ ~ t/2 ~ ~'), s('RolandTR909_sd').struct('~ ~ ~ ~ t ~ ~ ~ ~ ~ t ~ ~ ~ ~ t/2'), s('RolandTR909_hh').struct('t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2').gain(perlin.range(0.35,0.55)))",
+      "harmony": "chord('<Fm Db Eb Fm>').voicing().s('sine').fm(1).fmh(2).room(0.55).gain(0.5).slow(8)",
+      "bass": "note('<f1 ~ ~ ~ ~ ~ f1/2 ~ ~ ~ ~ ~ ~ f1/2 ~ ~>').s('sawtooth').lpf(400).gain(0.75)"
+    },
+    "climax": {
+      "rhythm": "stack(s('RolandTR909_bd').struct('t ~ ~ ~ ~ ~ t ~ ~ t/2 ~ ~ ~ t/2 ~ ~'), s('RolandTR909_sd').struct('~ ~ ~ ~ t ~ ~ t/2 ~ ~ t ~ ~ ~ t/2 t/2'), s('RolandTR909_hh').struct('t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2').gain(perlin.range(0.5,0.8)))",
+      "harmony": "chord('<Fm Db Eb Fm>').voicing().s('sine').fm(1).fmh(2).room(0.55).gain(0.55).slow(8)",
+      "bass": "note('<f1 ~ ~ ~ ~ f1/2 f1 ~ ~ f1/2 ~ ~ f1/2 f1 ~ ~>').s('sawtooth').lpf(500).gain(0.85)",
+      "stab": "chord('<Fm Db Eb Fm>').struct('~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~').s('square').fm(0.5).delay(0.25).room(0.25).gain(0.6)"
+    },
+    "resolve": {
+      "rhythm": "s('RolandTR909_hh').struct('t ~ t ~ t ~ t ~ ~ ~ ~ ~ ~ ~ ~ ~').gain(perlin.range(0.2,0.35))",
+      "harmony": "chord('<Fm>').voicing().s('sine').fm(1).fmh(2).room(0.65).gain(perlin.range(0.3,0.45)).slow(4)",
+      "bass": "note('f1').s('sawtooth').lpf(300).gain(perlin.range(0.3,0.5)).slow(2)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "VI", "VII", "i"],
+    "scale": "natural_minor",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "timbral_vector",
+    "field": "Fm",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["pad", "hihat"], "velocity": 0.4 },
+    "build": { "layers": ["kick", "hihat", "snare", "bass", "pad"], "velocity": 0.7 },
+    "climax": { "layers": ["kick", "hihat", "snare", "bass", "pad", "stab"], "velocity": 0.95 },
+    "resolve": { "layers": ["pad", "bass", "hihat"], "velocity": 0.45 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 5 },
+    "climax": { "max_simultaneous_voices": 6 },
+    "resolve": { "max_simultaneous_voices": 3 },
+    "hard_limit": 7,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "drop_structure",
+    "tension_point": "build_to_climax",
+    "release": "rhythmic"
+  },
+
+  "voiceLeading": {
+    "chords": {
+      "i": {
+        "root": ["F2", "C3", "F3", "Ab3", "C4"],
+        "drop2": ["F2", "Ab2", "C3", "F3", "C4"],
+        "spread": ["F2", "C3", "Ab3", "F4", "C5"]
+      },
+      "VI": {
+        "root": ["Db2", "Ab2", "Db3", "F3", "Ab3"],
+        "drop2": ["Db2", "F2", "Ab2", "Db3", "Ab3"],
+        "spread": ["Db2", "Ab2", "F3", "Db4", "Ab4"]
+      },
+      "VII": {
+        "root": ["Eb2", "Bb2", "Eb3", "G3", "Bb3"],
+        "drop2": ["Eb2", "G2", "Bb2", "Eb3", "Bb3"],
+        "spread": ["Eb2", "Bb2", "G3", "Eb4", "Bb4"]
+      }
+    },
+    "transitions": {
+      "i_to_VI": { "motion": "descending major third, F->Db, C holds as common tone with Ab" },
+      "VI_to_VII": { "motion": "ascending whole step, Db->Eb, Ab->Bb, F->G stepwise" },
+      "VII_to_i": { "motion": "ascending half step, Eb->F, Bb->C, dominant-to-tonic energy" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(s('RolandTR909_sd').struct('t*8').gain(perlin.range(0.2,0.7)), note('f1').s('sawtooth').lpf(sine.range(100,400)).gain(perlin.range(0.3,0.8)))"
+    },
+    "build_to_climax": {
+      "type": "drop",
+      "bars_before": 0.5,
+      "strudel": "stack(s('RolandTR909_sd').struct('t*16').gain(perlin.range(0.5,1.0)), s('white').gain(0.4).lpf(4000))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('Fm').voicing().s('sine').fm(1).room(0.7).gain(perlin.range(0.25,0.45)).slow(2)"
+    }
+  }
+}

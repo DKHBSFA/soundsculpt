@@ -1,0 +1,85 @@
+{
+  "template_id": "luxury_minimal",
+  "display_name": "Luxury / Minimal",
+  "description": "Elegant, understated sophistication for beauty brands, high fashion, and premium automotive",
+  "use_cases": ["beauty", "fashion", "luxury", "premium auto", "jewelry", "real estate"],
+
+  "parameters": {
+    "duration": {
+      "type": "enum",
+      "values": ["30s", "60s"],
+      "default": "30s"
+    },
+    "energy": {
+      "type": "range",
+      "min": 0.2,
+      "max": 0.6,
+      "default": 0.4
+    },
+    "voiceover": {
+      "type": "bool",
+      "default": true
+    }
+  },
+
+  "base_style": "neo-classical",
+
+  "duration_adaptations": {
+    "30s": {
+      "arc_strategy": "compressed",
+      "impact_intensity": 0.5,
+      "bars": 10,
+      "phases": {
+        "impact": [0, 1],
+        "build": [1, 5],
+        "climax": [5, 8],
+        "resolve": [8, 10]
+      }
+    },
+    "60s": {
+      "arc_strategy": "full",
+      "impact_intensity": 0.4,
+      "bars": 20,
+      "phases": {
+        "impact": [0, 1],
+        "intro": [1, 5],
+        "build": [5, 10],
+        "climax": [10, 16],
+        "resolve": [16, 20]
+      }
+    }
+  },
+
+  "energy_scaling": {
+    "affects": ["velocity_multiplier", "density", "filter_brightness"],
+    "formula": {
+      "velocity_multiplier": "0.35 + (energy * 0.35)",
+      "density": "sparse",
+      "filter_brightness": "600 + (energy * 1200)"
+    }
+  },
+
+  "voiceover_adaptation": {
+    "if_true": {
+      "apply_mode": "voiceover_bed",
+      "mid_gain_reduction": 0.5
+    }
+  },
+
+  "style_overrides": {
+    "temporal": {
+      "bpm": 65
+    },
+    "key": "Am",
+    "sounds": {
+      "piano": {
+        "room": 0.4,
+        "gain": 0.55
+      },
+      "strings": {
+        "room": 0.55,
+        "gain": 0.4
+      }
+    }
+  }
+}

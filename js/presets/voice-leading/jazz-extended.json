@@ -1,0 +1,187 @@
+{
+  "_doc": "Pre-computed voice leading tables for jazz extended chords (7, 9, 11, 13)",
+
+  "voicing_types": {
+    "shell": "Root, 3rd, 7th only (guide tones)",
+    "drop2": "Second voice from top dropped an octave",
+    "drop3": "Third voice from top dropped an octave",
+    "quartal": "Stacked fourths",
+    "so_what": "Quartal voicing from 'So What' (D dorian)"
+  },
+
+  "keys": {
+    "Bb_major": {
+      "scale": ["Bb", "C", "D", "Eb", "F", "G", "A"],
+      "chords": {
+        "Bbmaj7": {
+          "shell": ["Bb2", "D3", "A3"],
+          "drop2": ["D2", "Bb2", "F3", "A3"],
+          "rootless_a": ["D3", "F3", "A3", "C4"],
+          "rootless_b": ["A2", "C3", "D3", "F3"]
+        },
+        "Bbmaj9": {
+          "drop2": ["D2", "A2", "C3", "F3"],
+          "spread": ["Bb1", "F3", "A3", "C4", "D4"]
+        },
+        "Cm7": {
+          "shell": ["C3", "Eb3", "Bb3"],
+          "drop2": ["Eb2", "C3", "G3", "Bb3"],
+          "rootless_a": ["Eb3", "G3", "Bb3", "D4"],
+          "rootless_b": ["Bb2", "D3", "Eb3", "G3"]
+        },
+        "Cm9": {
+          "drop2": ["Eb2", "Bb2", "D3", "G3"],
+          "spread": ["C2", "G3", "Bb3", "D4", "Eb4"]
+        },
+        "Dm7": {
+          "shell": ["D3", "F3", "C4"],
+          "drop2": ["F2", "D3", "A3", "C4"],
+          "rootless_a": ["F3", "A3", "C4", "E4"],
+          "rootless_b": ["C3", "E3", "F3", "A3"]
+        },
+        "Ebmaj7": {
+          "shell": ["Eb3", "G3", "D4"],
+          "drop2": ["G2", "Eb3", "Bb3", "D4"],
+          "spread": ["Eb2", "Bb3", "D4", "G4"]
+        },
+        "F7": {
+          "shell": ["F2", "A2", "Eb3"],
+          "drop2": ["A1", "F2", "C3", "Eb3"],
+          "rootless_a": ["A2", "C3", "Eb3", "G3"],
+          "rootless_b": ["Eb2", "G2", "A2", "C3"]
+        },
+        "F9": {
+          "drop2": ["A1", "Eb2", "G2", "C3"],
+          "spread": ["F1", "C3", "Eb3", "G3", "A3"]
+        },
+        "F13": {
+          "voicing": ["F2", "A2", "Eb3", "G3", "D4"]
+        },
+        "Gm7": {
+          "shell": ["G2", "Bb2", "F3"],
+          "drop2": ["Bb1", "G2", "D3", "F3"],
+          "rootless_a": ["Bb2", "D3", "F3", "A3"],
+          "rootless_b": ["F2", "A2", "Bb2", "D3"]
+        },
+        "Am7b5": {
+          "shell": ["A2", "C3", "G3"],
+          "drop2": ["C2", "A2", "Eb3", "G3"],
+          "spread": ["A1", "Eb3", "G3", "C4"]
+        }
+      },
+      "progressions": {
+        "ii_V_I": {
+          "name": "Jazz ii-V-I in Bb",
+          "chords": ["Cm7", "F7", "Bbmaj7"],
+          "transitions": [
+            {
+              "from": "Cm7",
+              "to": "F7",
+              "voicing": "rootless_a_to_rootless_b",
+              "voice_motion": {
+                "description": "Guide tones Eb->Eb (hold), Bb->A (step down)",
+                "tenor": "Eb3 -> Eb3 (7th becomes 9th)",
+                "alto": "G3 -> G3 (5th holds)",
+                "soprano": "Bb3 -> A3 (7th to 3rd, step down)"
+              },
+              "smoothness_score": 0.95
+            },
+            {
+              "from": "F7",
+              "to": "Bbmaj7",
+              "voicing": "rootless_b_to_rootless_a",
+              "voice_motion": {
+                "description": "Eb->D (7th resolves), A->Bb (3rd to root)",
+                "bass": "Eb2 -> D2 (step down)",
+                "tenor": "G2 -> F2 (step down)",
+                "alto": "A2 -> A2 (3rd to 7th, hold)",
+                "soprano": "C3 -> C3 (5th to 9th, hold)"
+              },
+              "cadence_type": "authentic",
+              "smoothness_score": 0.95
+            }
+          ]
+        },
+        "I_vi_ii_V": {
+          "name": "Rhythm changes A section",
+          "chords": ["Bbmaj7", "Gm7", "Cm7", "F7"],
+          "transitions": [
+            {
+              "from": "Bbmaj7",
+              "to": "Gm7",
+              "voice_motion": {
+                "description": "Parallel drop, all voices down a minor third",
+                "tenor": "D2 -> Bb1",
+                "alto": "A2 -> F2",
+                "soprano": "F3 -> D3"
+              },
+              "smoothness_score": 0.85
+            }
+          ]
+        }
+      }
+    },
+
+    "C_major": {
+      "chords": {
+        "Cmaj7": {
+          "shell": ["C3", "E3", "B3"],
+          "drop2": ["E2", "C3", "G3", "B3"],
+          "rootless_a": ["E3", "G3", "B3", "D4"],
+          "rootless_b": ["B2", "D3", "E3", "G3"]
+        },
+        "Cmaj9": {
+          "spread": ["C2", "G3", "B3", "D4", "E4"]
+        },
+        "Dm7": {
+          "shell": ["D3", "F3", "C4"],
+          "drop2": ["F2", "D3", "A3", "C4"],
+          "rootless_a": ["F3", "A3", "C4", "E4"]
+        },
+        "Dm9": {
+          "spread": ["D2", "A3", "C4", "E4", "F4"]
+        },
+        "G7": {
+          "shell": ["G2", "B2", "F3"],
+          "drop2": ["B1", "G2", "D3", "F3"],
+          "rootless_a": ["B2", "D3", "F3", "A3"]
+        },
+        "G7alt": {
+          "voicing": ["G2", "B2", "Db3", "F3", "Ab3"],
+          "description": "Altered dominant with b9 and b13"
+        },
+        "G13": {
+          "voicing": ["G2", "B2", "F3", "A3", "E4"]
+        }
+      },
+      "progressions": {
+        "ii_V_I": {
+          "name": "Jazz ii-V-I in C",
+          "chords": ["Dm7", "G7", "Cmaj7"]
+        }
+      }
+    }
+  },
+
+  "techniques": {
+    "tritone_substitution": {
+      "description": "Replace V7 with bII7 (shares same tritone)",
+      "example": "G7 -> Db7, both have B-F tritone"
+    },
+    "passing_diminished": {
+      "description": "Chromatic diminished chord between diatonic chords",
+      "example": "Cmaj7 - C#dim7 - Dm7"
+    },
+    "backdoor": {
+      "description": "bVII7 to I cadence instead of V7 to I",
+      "example": "Bb7 -> Cmaj7"
+    }
+  },
+
+  "rules": {
+    "guide_tones": "3rd and 7th define chord quality, prioritize smooth motion",
+    "rootless": "When bass plays root, upper structure omits root",
+    "voice_independence": "Each voice should have melodic interest",
+    "avoid_doubling": "Don't double 3rd or 7th in jazz voicings"
+  }
+}

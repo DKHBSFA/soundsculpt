@@ -1,0 +1,225 @@
+{
+  "style": "corporate",
+  "description": "Clean, professional background music with piano and soft pads for business presentations and explainer videos.",
+  "family": "tonal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "chord('C').voicing().s('piano').room(0.3).gain(0.85)"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "chord('C').voicing().s('sine').fm(1.5).fmh(1).room(0.4).gain(0.5)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<g4 e4 c4 g3>').s('piano').room(0.3).gain(0.65)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["shimmer", "pad_high"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["piano"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 90,
+    "range": [80, 100],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "cadential_insert",
+      "cadenceBars": 2,
+      "forceTonicLastBar": true,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "C major",
+
+  "sounds": {
+    "piano": {
+      "source": "piano",
+      "room": 0.3,
+      "gain": 0.65
+    },
+    "pad": {
+      "source": "sine",
+      "fm": 1.5,
+      "fmh": 1,
+      "room": 0.45,
+      "gain": 0.45
+    },
+    "strings": {
+      "source": "sawtooth",
+      "lpf": 2000,
+      "room": 0.4,
+      "gain": 0.5
+    },
+    "bass": {
+      "source": "triangle",
+      "lpf": 400,
+      "gain": 0.7
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "chord('<C G Am F>').voicing().s('sine').fm(1.5).fmh(1).room(0.45).gain(0.4).slow(8)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "silent",
+      "harmony": "chord('<C G Am F>').voicing().s('sine').fm(1.5).fmh(1).room(0.45).gain(0.5).slow(4)",
+      "piano": "note('<c4 e4 g4 c5>(3,8)').s('piano').room(0.3).gain(0.55).slow(2)",
+      "bass": "note('<c2 ~ ~ ~ ~ ~ ~ ~ g1 ~ ~ ~ ~ ~ ~ ~>').s('triangle').lpf(400).gain(0.65)"
+    },
+    "climax": {
+      "rhythm": "silent",
+      "harmony": "chord('<C G Am F>').voicing().s('sine').fm(1.5).fmh(1).room(0.45).gain(0.6).slow(4)",
+      "piano": "note('<c4 e4 g4 c5 g4 e4>(5,8)').s('piano').room(0.3).gain(0.7)",
+      "strings": "chord('<C G Am F>').voicing().s('sawtooth').lpf(2000).room(0.4).gain(0.5).slow(4)",
+      "bass": "note('<c2 ~ ~ ~ ~ ~ ~ ~ g1 ~ ~ ~ c2 ~ ~ ~>').s('triangle').lpf(400).gain(0.7)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "chord('<C>').voicing().s('sine').fm(1.5).fmh(1).room(0.5).gain(perlin.range(0.2,0.35)).slow(4)",
+      "piano": "note('<c4 e4 g4 c5>').s('piano').room(0.35).gain(perlin.range(0.3,0.45)).slow(4)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["I", "V", "vi", "IV"],
+    "scale": "major",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "functional_tonal",
+    "functions": {
+      "I": "T",
+      "V": "D",
+      "vi": "T(relative)",
+      "IV": "SD"
+    },
+    "cadences": {
+      "primary": "plagal",
+      "reasoning": "Last chord IV resolving back to I = plagal cadence"
+    }
+  },
+
+  "arc": {
+    "intro": { "layers": ["pad"], "velocity": 0.4 },
+    "build": { "layers": ["pad", "piano", "bass"], "velocity": 0.55 },
+    "climax": { "layers": ["pad", "piano", "bass", "strings"], "velocity": 0.75 },
+    "resolve": { "layers": ["pad", "piano"], "velocity": 0.35 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 1 },
+    "build": { "max_simultaneous_voices": 3 },
+    "climax": { "max_simultaneous_voices": 4 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 6,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "periodo_tematico",
+    "phrases": [
+      { "role": "antecedent", "cadence": "half" },
+      { "role": "consequent", "cadence": "plagal" }
+    ],
+    "development": {
+      "climax": "repetition_with_added_layers",
+      "resolve": "consequent_simplified"
+    }
+  },
+
+  "voiceLeading": {
+    "_doc": "Concrete voicings for C major: I=C, V=G, vi=Am, IV=F",
+    "chords": {
+      "C": {
+        "root":   ["C3", "G3", "C4", "E4", "G4"],
+        "drop2":  ["C3", "G3", "E4", "G4", "C5"],
+        "spread": ["C3", "C4", "G4", "E5"]
+      },
+      "G": {
+        "root":   ["G2", "D3", "G3", "B3", "D4"],
+        "drop2":  ["G2", "D3", "B3", "D4", "G4"],
+        "spread": ["G2", "G3", "D4", "B4"]
+      },
+      "Am": {
+        "root":   ["A2", "E3", "A3", "C4", "E4"],
+        "drop2":  ["A2", "E3", "C4", "E4", "A4"],
+        "spread": ["A2", "A3", "E4", "C5"]
+      },
+      "F": {
+        "root":   ["F2", "C3", "F3", "A3", "C4"],
+        "drop2":  ["F2", "C3", "A3", "C4", "F4"],
+        "spread": ["F2", "F3", "C4", "A4"]
+      }
+    },
+    "transitions": {
+      "C_to_G":  { "motion": "bass descends fourth, E4 holds as common tone, top voice B3→D4", "parallel_motion_check": "no parallel P5 or P8" },
+      "G_to_Am": { "motion": "bass moves up step G→A, B3→C4, D4→E4 — smooth ascending", "parallel_motion_check": "no parallel P5 or P8" },
+      "Am_to_F": { "motion": "bass descends third A→F, C4→C4 common tone, E4→A3 inner drop", "parallel_motion_check": "no parallel P5 or P8" },
+      "F_to_C":  { "motion": "bass ascends fifth F→C, A3→G3, voices converge to root position", "parallel_motion_check": "no parallel P5 or P8" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('C').voicing().s('sine').fm(1.5).room(0.5).gain(perlin.range(0.4,0.6)).slow(2)"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(chord('C').voicing().s('sine').fm(1.5).room(0.5).lpf(sine.range(1200,3000)).gain(0.5).slow(2), note('<c4 e4 g4>').s('piano').gain(perlin.range(0.4,0.7)))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('C').voicing().s('sine').fm(1.5).room(0.55).gain(perlin.range(0.2,0.4)).slow(2)"
+    }
+  }
+}

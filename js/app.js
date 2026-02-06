@@ -36,9 +36,12 @@ import {
   renderStyleGrid,
   renderTemplateGrid,
   generate as generateMusic,
+  generateWithAI,
   resetOptions as resetGenerationOptions,
 } from './generation.js';
 import { chordPalette } from './ui/chord-palette.js';
+import { apiKeyModal } from './ui/api-key-modal.js';
+import { openRouterClient } from './ai/openrouter-client.js';
 import { recorder } from './audio/recorder.js';
 import { midiManager } from './midi/manager.js';
 import { initA11yKeyboard } from './keyboard-a11y.js';
@@ -46,6 +49,7 @@ import { sessionRecorder } from './session/recorder.js';
 import { sessionPlayer } from './session/player.js';
 import { initSessionControls } from './ui/session-controls.js';
 import { settingsModal } from './ui/settings.js';
+import { voiceMenu } from './ui/voice-menu.js';
 
 // === DOM Elements ===
 const elements = {
@@ -63,6 +67,12 @@ const elements = {
   btnLoad: document.getElementById('btn-load'),
   recentProjects: document.getElementById('recent-projects'),
   recentList: document.getElementById('recent-list'),
+
+  // AI Composition Toggle (in generation modal)
+  aiCompositionToggle: document.getElementById('ai-composition-toggle'),
+  aiKeyStatus: document.getElementById('ai-key-status'),
+  aiKeyStatusText: document.getElementById('ai-key-status-text'),
+  btnConfigureApiKey: document.getElementById('btn-configure-api-key'),
 
   // Header
   projectName: document.getElementById('project-name'),
@@ -163,6 +173,150 @@ function initThemeToggle() {
   });
 }
 
+// === Voice Panel Resize ===
+
+/**
+ * Initialize voice panel resizing
+ */
+function initVoicePanelResize() {
+  const voicePanel = document.getElementById('voice-panel');
+  const resizeHandle = document.getElementById('voice-panel-resize');
+
+  if (!voicePanel || !resizeHandle) return;
+
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  resizeHandle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = voicePanel.offsetWidth;
+    resizeHandle.classList.add('dragging');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+
+    const deltaX = e.clientX - startX;
+    const newWidth = Math.max(150, Math.min(400, startWidth + deltaX));
+    voicePanel.style.width = `${newWidth}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      resizeHandle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      // Save preference
+      localStorage.setItem('soundsculpt-voice-panel-width', voicePanel.style.width);
+    }
+  });
+
+  // Restore saved width
+  const savedWidth = localStorage.getItem('soundsculpt-voice-panel-width');
+  if (savedWidth) {
+    voicePanel.style.width = savedWidth;
+  }
+}
+
+// === Note Playback ===
+
+// Track which notes have been triggered to avoid re-triggering
+let lastTriggeredStep = -1;
+const triggeredNotes = new Set();
+
+/**
+ * Play melodic notes (from piano roll, score, or AI generation) at a given step
+ * This supplements the step sequencer by handling notes with startBeat/durationBeats
+ * @param {number} stepIndex - Current step (0-15 for first bar, 0-63 for 4 bars)
+ * @param {number} time - Scheduled Web Audio time
+ */
+function playNotesAtStep(stepIndex, time) {
+  const voices = state.get('voices') || [];
+  const tempo = state.get('transport')?.tempo || 120;
+  const beatsPerSecond = tempo / 60;
+
+  // Clear triggered notes when we restart from beginning
+  if (stepIndex < lastTriggeredStep) {
+    triggeredNotes.clear();
+  }
+  lastTriggeredStep = stepIndex;
+
+  // Steps per beat (16th notes = 4 steps per beat)
+  const stepsPerBeat = 4;
+
+  // Check if any voice has solo enabled
+  const anySolo = voices.some(v => v.solo);
+
+  voices.forEach(voice => {
+    // Skip muted voices or non-solo when solo is active
+    if (voice.muted) return;
+    if (anySolo && !voice.solo) return;
+
+    // Skip drum voices (they use steps, not notes)
+    if (voice.type === 'drum' || voice.sourceType === 'drum') return;
+
+    // Notes can be in voice.notes or voice.content.notes (AI generation uses content.notes)
+    const notes = voice.notes || voice.content?.notes || [];
+
+    notes.forEach((note, noteIndex) => {
+      // Create unique key for this note
+      const noteKey = `${voice.id}-${noteIndex}-${note.startBeat}`;
+
+      // Skip already triggered notes
+      if (triggeredNotes.has(noteKey)) return;
+
+      // Check if this note should start at this step
+      // startBeat is in beats, we're checking at step resolution (1/4 beat)
+      const noteStartStep = Math.floor(note.startBeat * stepsPerBeat);
+
+      // Trigger note if we're at or just past its start step
+      if (noteStartStep === stepIndex) {
+        // Calculate duration in seconds
+        const durationBeats = note.durationBeats || 0.5;
+        const durationSeconds = durationBeats / beatsPerSecond;
+
+        // Determine synth preset
+        const synthPreset = voice.synthPreset || voice.sound || getDefaultPresetForVoice(voice);
+
+        // Play the note
+        playNote(
+          voice.id,
+          note.pitch,
+          time,
+          durationSeconds,
+          (note.velocity || 100) / 127,
+          voice.name,
+          synthPreset
+        );
+
+        // Mark as triggered
+        triggeredNotes.add(noteKey);
+      }
+    });
+  });
+}
+
+/**
+ * Get default synth preset based on voice name/type
+ */
+function getDefaultPresetForVoice(voice) {
+  const name = (voice.name || '').toLowerCase();
+  if (name.includes('bass')) return 'bass';
+  if (name.includes('lead')) return 'lead';
+  if (name.includes('pad')) return 'pad';
+  if (name.includes('arp')) return 'arp';
+  if (name.includes('piano') || name.includes('keys')) return 'piano';
+  if (name.includes('string')) return 'strings';
+  if (name.includes('brass')) return 'brass';
+  return 'default';
+}
+
 // === Initialization ===
 
 /**
@@ -173,6 +327,9 @@ async function init() {
 
   // Initialize theme toggle early to prevent flash
   initThemeToggle();
+
+  // Initialize voice panel resizing
+  initVoicePanelResize();
 
   // Setup persistence
   setupDragDrop();
@@ -231,12 +388,13 @@ async function init() {
 
   // Setup scheduler trigger callback
   scheduler.setTriggerCallback((stepIndex, time) => {
+    // 1. Step sequencer (drums and step-based voices)
     if (sequencerView) {
       const activeVoices = sequencerView.getActiveStepsAtBeat(stepIndex);
       synthEngine.triggerStep(activeVoices, stepIndex, time);
 
       // Trigger patch ADSR envelopes for patch voices (BUG-005 fix)
-      for (const voiceId of activeVoices) {
+      for (const { voiceId } of activeVoices) {
         const voice = state.getVoice(voiceId);
         if (voice?.sourceType === 'patch') {
           const runtime = patchManager.runtimes.get(voiceId);
@@ -246,6 +404,9 @@ async function init() {
         }
       }
     }
+
+    // 2. Melodic notes (piano roll, score, AI-generated)
+    playNotesAtStep(stepIndex, time);
   });
 
   // Start metering
@@ -269,6 +430,11 @@ async function init() {
   // Initialize settings modal (BUG-006 fix)
   settingsModal.init();
 
+  // Initialize API key modal and voice menu
+  apiKeyModal.init();
+  voiceMenu.init();
+  initAIToggle();
+
   // Initialize MIDI (Fase 9)
   if (midiManager.checkSupport()) {
     midiManager.requestAccess().then((success) => {
@@ -291,6 +457,56 @@ async function init() {
   updateRecentProjects();
 
   console.log('SoundSculpt ready');
+}
+
+/**
+ * Initialize AI Composition toggle in generation modal
+ */
+function initAIToggle() {
+  const toggle = elements.aiCompositionToggle;
+  if (!toggle) return;
+
+  // Update status when toggle changes
+  toggle.addEventListener('change', updateAIKeyStatus);
+
+  // Configure API key button
+  elements.btnConfigureApiKey?.addEventListener('click', () => {
+    apiKeyModal.show(() => updateAIKeyStatus());
+  });
+
+  // Initial status update
+  updateAIKeyStatus();
+}
+
+/**
+ * Update AI key status display in generation modal
+ */
+function updateAIKeyStatus() {
+  const toggle = elements.aiCompositionToggle;
+  const statusEl = elements.aiKeyStatus;
+  const statusText = elements.aiKeyStatusText;
+
+  if (!statusEl || !statusText) return;
+
+  // Only show status when AI is enabled
+  if (toggle?.checked) {
+    statusEl.classList.remove('hidden');
+    const isDemo = openRouterClient.isUsingDefaultKey();
+    if (isDemo) {
+      statusText.textContent = 'Demo mode - limited generations';
+    } else {
+      statusText.textContent = 'Using your API key';
+    }
+  } else {
+    statusEl.classList.add('hidden');
+  }
+}
+
+/**
+ * Check if AI composition is enabled
+ */
+function isAICompositionEnabled() {
+  return elements.aiCompositionToggle?.checked ?? false;
 }
 
 /**
@@ -389,13 +605,7 @@ function setupEventListeners() {
   // Generation modal
   elements.btnCloseGeneration?.addEventListener('click', hideGenerationModal);
   elements.btnCancelGeneration?.addEventListener('click', hideGenerationModal);
-  elements.btnGenerateMusic?.addEventListener('click', () => {
-    const result = generateMusic();
-    if (result) {
-      hideGenerationModal();
-      enterApp();
-    }
-  });
+  elements.btnGenerateMusic?.addEventListener('click', handleGenerateClick);
 }
 
 /**
@@ -851,6 +1061,7 @@ function renderVoiceList() {
         <button class="voice-btn voice-btn-monitor ${voice.monitoring ? 'active' : ''}" data-action="monitor" title="Input Monitoring">I</button>
         <button class="voice-btn ${voice.solo ? 'active' : ''}" data-action="solo" title="Solo">S</button>
         <button class="voice-btn ${voice.muted ? 'muted' : ''}" data-action="mute" title="Mute">M</button>
+        <button class="voice-btn voice-menu-btn" data-action="menu" title="More Actions" aria-haspopup="menu">&#8942;</button>
       </div>
     </div>
   `
@@ -862,7 +1073,7 @@ function renderVoiceList() {
     const voiceId = strip.dataset.voiceId;
 
     strip.addEventListener('click', (e) => {
-      if (!e.target.closest('.voice-btn') && !e.target.closest('.voice-volume')) {
+      if (!e.target.closest('.voice-btn') && !e.target.closest('.voice-volume') && !e.target.closest('.voice-menu-btn')) {
         state.selectVoice(voiceId);
         renderVoiceList();
       }
@@ -896,6 +1107,11 @@ function renderVoiceList() {
     strip.querySelector('[data-action="volume"]')?.addEventListener('input', (e) => {
       const volume = parseInt(e.target.value, 10) / 100;
       state.updateVoice(voiceId, { volume });
+    });
+
+    strip.querySelector('[data-action="menu"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      voiceMenu.show(voiceId, e.currentTarget);
     });
   });
 }
@@ -1040,6 +1256,63 @@ function showGenerationModal() {
  */
 function hideGenerationModal() {
   elements.generationModal?.classList.add('hidden');
+}
+
+/**
+ * Handle "Generate" button click in generation modal
+ * Uses AI if toggle is on, otherwise procedural generation
+ */
+async function handleGenerateClick() {
+  const useAI = isAICompositionEnabled();
+
+  if (useAI) {
+    // Get selected style for AI generation
+    const selectedStyle = document.querySelector('.style-card.selected');
+    const genre = selectedStyle?.dataset.style || 'electronic';
+
+    // Disable button during generation
+    const btn = elements.btnGenerateMusic;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+    }
+
+    try {
+      const result = await generateWithAI(genre);
+      if (result) {
+        hideGenerationModal();
+        enterApp();
+        eventBus.emit(Events.TOAST_SHOW, {
+          message: 'Generated with AI',
+          type: 'success',
+        });
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      // Fallback to procedural
+      eventBus.emit(Events.TOAST_SHOW, {
+        message: 'AI failed, using procedural generation',
+        type: 'warning',
+      });
+      const result = generateMusic();
+      if (result) {
+        hideGenerationModal();
+        enterApp();
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+      }
+    }
+  } else {
+    // Procedural generation
+    const result = generateMusic();
+    if (result) {
+      hideGenerationModal();
+      enterApp();
+    }
+  }
 }
 
 /**

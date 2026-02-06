@@ -106,6 +106,7 @@ export const Events = {
   VOICE_UPDATE: 'voice:update',
   VOICE_MUTE: 'voice:mute',
   VOICE_SOLO: 'voice:solo',
+  VOICE_CONTENT_SYNC: 'voice:content:sync', // View sync between steps/notes/patternCode
 
   // Notes
   NOTE_ADD: 'note:add',

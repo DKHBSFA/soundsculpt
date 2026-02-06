@@ -5,8 +5,9 @@
 import { eventBus, Events } from './event-bus.js';
 import { state } from './state.js';
 import { sessionPlayer } from './session/player.js';
+import { stepsToStrudel, notesToStrudel } from './sync/view-sync.js';
 
-const SCHEMA_VERSION = 2; // Bumped for session support
+const SCHEMA_VERSION = 3; // Bumped for patternCode migration
 const APP_VERSION = '0.1.0';
 const FILE_EXTENSION = '.soundsculpt';
 
@@ -116,7 +117,79 @@ function migrateProjectFile(data) {
     // The loader will handle missing session gracefully
   }
 
+  // v2 -> v3: Add patternCode to voices that only have steps/notes
+  if (migrated.schemaVersion === 2) {
+    migrated.schemaVersion = 3;
+    migrated = migrateVoicesToPatternCode(migrated);
+  }
+
   return migrated;
+}
+
+/**
+ * Migrate voices to include patternCode
+ * For projects saved before AI-first generation
+ */
+function migrateVoicesToPatternCode(data) {
+  if (!data.voices || !Array.isArray(data.voices)) {
+    return data;
+  }
+
+  const migratedVoices = data.voices.map(voice => {
+    // Skip if already has patternCode
+    if (voice.patternCode) {
+      return voice;
+    }
+
+    let patternCode = '';
+
+    // Generate patternCode from steps
+    if (voice.content?.steps && Array.isArray(voice.content.steps)) {
+      try {
+        patternCode = stepsToStrudel(voice.content.steps, {
+          name: voice.name,
+          type: voice.type,
+          sourceType: voice.sourceType,
+          content: voice.content,
+          volume: voice.volume,
+        });
+      } catch (e) {
+        console.warn('Failed to migrate steps to patternCode:', e);
+      }
+    }
+
+    // Generate patternCode from notes (if no steps or melodic voice)
+    if (voice.content?.notes?.length > 0 && (!patternCode || voice.type !== 'drum')) {
+      try {
+        patternCode = notesToStrudel(voice.content.notes, {
+          name: voice.name,
+          content: voice.content,
+          volume: voice.volume,
+        });
+      } catch (e) {
+        console.warn('Failed to migrate notes to patternCode:', e);
+      }
+    }
+
+    // Fallback: generate a placeholder pattern
+    if (!patternCode) {
+      if (voice.sourceType === 'drum' || voice.type === 'drum') {
+        patternCode = `// Migrated from legacy project\ns('${voice.content?.sound || 'bd}')\n  .struct('t ~ ~ ~ t ~ ~ ~')\n  .gain(${voice.volume || 0.8})`;
+      } else {
+        patternCode = `// Migrated from legacy project\nnote('c4')\n  .s('sine')\n  .gain(${voice.volume || 0.8})`;
+      }
+    }
+
+    return {
+      ...voice,
+      patternCode,
+    };
+  });
+
+  return {
+    ...data,
+    voices: migratedVoices,
+  };
 }
 
 /**

@@ -15,9 +15,49 @@ import {
   getChordMidi,
   getDiatonicChords,
   generateArpSequence,
+  quantizeToScale,
   SCALES,
   CHORDS,
+  CHORD_MOVEMENTS,
+  getBorrowedChords,
+  getSecondaryDominant,
+  validateCadence,
+  suggestCadence,
 } from './music-theory.js';
+import { openRouterClient } from './ai/openrouter-client.js';
+import {
+  buildSystemPrompt,
+  buildUserPrompt,
+  buildVoicePrompt,
+  calculatePhases,
+  validateAIOutput as validateAIOutputNew,
+  postProcessAIOutput
+} from './ai/generation-prompts.js';
+import {
+  getPreset,
+  getFamily,
+  SOUNDTRACK_PRESETS,
+  listStyles
+} from './presets/index.js';
+import {
+  parseStrudelToNotes,
+  parseStrudelToSteps,
+  isSilent as isPatternSilent
+} from './sync/strudel-parser.js';
+
+// Keep legacy imports for backwards compatibility
+let SYSTEM_PROMPT, PROJECT_PROMPTS, VOICE_PROMPTS, buildVoiceContext, fillPromptTemplate;
+try {
+  // These may be overwritten by new prompt system
+  const legacyPrompts = await import('./ai/generation-prompts.js');
+  SYSTEM_PROMPT = legacyPrompts.SYSTEM_PROMPT_BASE || legacyPrompts.SYSTEM_PROMPT;
+  PROJECT_PROMPTS = legacyPrompts.PROJECT_PROMPTS || {};
+  VOICE_PROMPTS = legacyPrompts.VOICE_PROMPTS || {};
+  buildVoiceContext = legacyPrompts.buildVoiceContext || (() => ({}));
+  fillPromptTemplate = legacyPrompts.fillPromptTemplate || ((t) => t);
+} catch (e) {
+  console.warn('Legacy prompts not available');
+}
 
 // === Pattern Parsing ===
 
@@ -334,43 +374,142 @@ function generateMelody(root, scaleType, baseOctave, rhythmPattern, melodicStyle
  * @param {string} progressionStyle - 'pop', 'jazz', 'minimal'
  * @returns {string[]} Array of chord symbols
  */
-function generateChordProgression(root, scaleType, bars, progressionStyle) {
+/**
+ * Generate dynamic chord progression using music theory rules
+ * @param {string} root - Scale root note
+ * @param {string} scaleType - Scale type
+ * @param {number} bars - Number of bars
+ * @param {string} progressionStyle - Style: 'pop', 'jazz', 'minimal', 'tonal', 'modal'
+ * @param {Object} options - Additional options
+ * @returns {string[]} Array of chord symbols
+ */
+function generateChordProgression(root, scaleType, bars, progressionStyle, options = {}) {
   const diatonic = getDiatonicChords(root, scaleType);
+  const {
+    useBorrowed = progressionStyle === 'jazz' || progressionStyle === 'tonal',
+    useSecondaryDominants = progressionStyle === 'jazz',
+    ensureCadence = true,
+  } = options;
 
-  // Common progressions by style
-  const progressions = {
-    pop: [
-      [1, 5, 6, 4],    // I-V-vi-IV
-      [1, 4, 5, 4],    // I-IV-V-IV
-      [6, 4, 1, 5],    // vi-IV-I-V
-      [1, 6, 4, 5],    // I-vi-IV-V
-    ],
-    jazz: [
-      [2, 5, 1, 1],    // ii-V-I
-      [1, 6, 2, 5],    // I-vi-ii-V
-      [3, 6, 2, 5],    // iii-vi-ii-V
-      [1, 4, 3, 6],    // I-IV-iii-vi
-    ],
-    minimal: [
-      [1, 1, 4, 4],    // I-I-IV-IV
-      [1, 4, 1, 4],    // I-IV-I-IV
-      [6, 6, 4, 4],    // vi-vi-IV-IV
-      [1, 5, 1, 5],    // I-V-I-V
-    ],
+  // Style-specific starting degrees and preferences
+  const stylePrefs = {
+    pop: { starts: [1, 6], avoidDegrees: [7], repeatChance: 0.2 },
+    jazz: { starts: [2, 3], avoidDegrees: [], repeatChance: 0.1 },
+    minimal: { starts: [1, 6], avoidDegrees: [3, 7], repeatChance: 0.5 },
+    tonal: { starts: [1], avoidDegrees: [], repeatChance: 0.15 },
+    modal: { starts: [1, 4], avoidDegrees: [5, 7], repeatChance: 0.4 },
   };
 
-  const styleProgressions = progressions[progressionStyle] || progressions.pop;
-  const selectedProgression = styleProgressions[Math.floor(Math.random() * styleProgressions.length)];
+  const prefs = stylePrefs[progressionStyle] || stylePrefs.pop;
 
-  // Expand to fill bars
-  const chords = [];
+  // Generate progression using movement rules
+  const progression = [];
+  let currentDegree = prefs.starts[Math.floor(Math.random() * prefs.starts.length)];
+
   for (let bar = 0; bar < bars; bar++) {
-    const degree = selectedProgression[bar % selectedProgression.length];
-    const chord = diatonic[degree - 1];
-    if (chord) {
-      chords.push(chord.symbol);
-    } else {
-      chords.push(root);
+    // Check if this is a phrase boundary (every 4 or 8 bars)
+    const isPhraseBoundary = (bar + 1) % 4 === 0;
+    const isFinalBar = bar === bars - 1;
+
+    // Maybe repeat current chord
+    if (bar > 0 && Math.random() < prefs.repeatChance) {
+      progression.push(currentDegree);
+      continue;
+    }
+
+    // Get valid next moves
+    const movements = CHORD_MOVEMENTS[currentDegree];
+    if (!movements) {
+      progression.push(currentDegree);
+      continue;
+    }
+
+    // Build weighted options
+    let candidates = [];
+
+    // Add common moves with higher weight
+    movements.common.forEach(d => {
+      if (!prefs.avoidDegrees.includes(d)) {
+        candidates.push({ degree: d, weight: 3 });
+      }
+    });
+
+    // Add rare moves with lower weight
+    movements.rare.forEach(d => {
+      if (!prefs.avoidDegrees.includes(d)) {
+        candidates.push({ degree: d, weight: 1 });
+      }
+    });
+
+    // For phrase boundaries heading to cadence, bias toward V
+    if (isPhraseBoundary && ensureCadence && !isFinalBar) {
+      candidates = candidates.map(c => ({
+        ...c,
+        weight: c.degree === 5 ? c.weight * 3 : c.weight,
+      }));
+    }
+
+    // For final bar, strongly prefer I for resolution
+    if (isFinalBar && ensureCadence) {
+      candidates = candidates.map(c => ({
+        ...c,
+        weight: c.degree === 1 ? c.weight * 5 : c.weight,
+      }));
+    }
+
+    // Maybe add a secondary dominant (jazz style)
+    if (useSecondaryDominants && Math.random() < 0.15 && !isPhraseBoundary) {
+      const nextDegree = candidates[0]?.degree;
+      if (nextDegree && nextDegree >= 2 && nextDegree <= 6) {
+        const secDom = getSecondaryDominant(nextDegree, root, scaleType);
+        if (secDom) {
+          progression.push(`V/${nextDegree}`); // Mark as secondary dominant
+          currentDegree = nextDegree;
+          continue;
+        }
+      }
+    }
+
+    // Select weighted random
+    const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let selected = candidates[0]?.degree || 1;
+
+    for (const c of candidates) {
+      roll -= c.weight;
+      if (roll <= 0) {
+        selected = c.degree;
+        break;
+      }
+    }
+
+    progression.push(selected);
+    currentDegree = selected;
+  }
+
+  // Convert degrees to chord symbols
+  const chords = progression.map(deg => {
+    // Handle secondary dominants
+    if (typeof deg === 'string' && deg.startsWith('V/')) {
+      const target = parseInt(deg.slice(2), 10);
+      const secDom = getSecondaryDominant(target, root, scaleType);
+      return secDom ? `${secDom.root}7` : root;
+    }
+
+    const chord = diatonic[deg - 1];
+    return chord ? chord.symbol : root;
+  });
+
+  // Maybe add a borrowed chord (tonal/jazz styles)
+  if (useBorrowed && Math.random() < 0.25) {
+    const borrowed = getBorrowedChords(root, scaleType.includes('minor') ? 'minor' : 'major');
+    if (borrowed.length > 0) {
+      const borrowedChord = borrowed[Math.floor(Math.random() * borrowed.length)];
+      // Insert borrowed chord at a non-cadential point
+      const insertPos = Math.floor(bars * 0.4) + Math.floor(Math.random() * Math.floor(bars * 0.3));
+      if (insertPos < chords.length - 1) {
+        chords[insertPos] = `${borrowedChord.root}${borrowedChord.type === 'minor' ? 'm' : ''}`;
+      }
     }
   }
 
@@ -530,65 +669,347 @@ const RHYTHM_PATTERNS = {
  * Pattern variations per style for musical interest
  * base: standard pattern, fill: end of phrase, sparse: after fill for contrast
  */
+/**
+ * Pattern variations by style and phase
+ * Each voice type has patterns for intro, build, climax, resolve phases
+ */
 const PATTERN_VARIATIONS = {
+  // === Electronic / House ===
+  electronic: {
+    'Kick': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'HiHat': {
+      intro:   [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      climax:  [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      resolve: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, false, false],
+    },
+    'Snare': {
+      intro:   [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      climax:  [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      resolve: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
+    },
+  },
+
+  // === Trap ===
   trap: {
     'HiHat': {
-      base: [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
-      fill: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true], // Roll
-      sparse: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      build:   [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
+      climax:  [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
     },
     '808': {
-      base: [true, false, false, true, false, true, false, false, true, false, false, false, true, false, false, true],
-      fill: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, true], // Slide effect
-      sparse: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, true, false, true, false, false, true, false, false, false, true, false, false, true],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, true],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Snare': {
+      intro:   [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      climax:  [false, false, false, false, true, false, false, true, false, false, false, false, true, false, true, false],
+      resolve: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
     },
   },
-  'lo-fi': {
-    'HiHat': {
-      base: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
-      fill: [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, true],
-      sparse: [false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false],
-    },
-    'Kick': {
-      base: [true, false, false, false, false, false, true, false, false, true, false, false, false, false, false, true],
-      fill: [true, false, false, true, false, false, true, false, true, false, false, true, false, true, true, false],
-      sparse: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
-    },
-  },
-  jazz: {
-    'Ride': {
-      base: [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
-      fill: [true, true, true, true, false, true, true, true, true, true, false, true, true, false, true, true], // Busy cymbal
-      sparse: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
-    },
-  },
-  electronic: {
-    'HiHat': {
-      base: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
-      fill: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
-      sparse: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
-    },
-  },
+
+  // === Drum and Bass ===
   dnb: {
     'Snare': {
-      base: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
-      fill: [false, false, true, false, true, false, true, false, false, true, true, false, true, true, true, true], // Break fill
-      sparse: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+      intro:   [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+      build:   [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      climax:  [false, false, true, false, true, false, true, false, false, true, true, false, true, true, true, true],
+      resolve: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
     },
     'HiHat': {
-      base: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
-      fill: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
-      sparse: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      climax:  [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Kick': {
+      intro:   [true, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      build:   [true, false, false, false, false, false, true, false, true, false, true, false, false, false, false, false],
+      climax:  [true, false, true, false, false, true, true, false, true, false, true, false, true, false, false, true],
+      resolve: [true, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
     },
   },
+
+  // === Jazz ===
+  jazz: {
+    'Ride': {
+      intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      build:   [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
+      climax:  [true, true, true, true, false, true, true, true, true, true, false, true, true, false, true, true],
+      resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Snare': {
+      intro:   [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+      climax:  [false, false, true, false, false, false, true, false, false, true, false, false, true, false, true, false],
+      resolve: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+    },
+    'Bass': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      climax:  [true, true, true, false, true, true, true, false, true, true, true, false, true, true, true, true],
+      resolve: [true, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+    },
+  },
+
+  // === Lo-fi ===
+  'lo-fi': {
+    'HiHat': {
+      intro:   [false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      build:   [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, true],
+      resolve: [false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false],
+    },
+    'Kick': {
+      intro:   [true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+      build:   [true, false, false, false, false, false, true, false, false, true, false, false, false, false, false, true],
+      climax:  [true, false, false, true, false, false, true, false, true, false, false, true, false, true, true, false],
+      resolve: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+    },
+    'Snare': {
+      intro:   [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      climax:  [false, false, false, false, true, false, false, true, false, false, false, false, true, false, false, true],
+      resolve: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
+    },
+  },
+
+  // === Ambient ===
   ambient: {
     'Pad': {
-      base: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
-      fill: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
-      sparse: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      climax:  [true, true, true, false, true, true, true, false, true, true, true, false, true, true, true, false],
+      resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Lead': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+  },
+
+  // === Orchestral ===
+  orchestral: {
+    'Strings': {
+      intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      climax:  [true, true, true, false, true, true, true, false, true, true, true, false, true, true, true, true],
+      resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Brass': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, false],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Timpani': {
+      intro:   [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, true],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+  },
+
+  // === Cinematic ===
+  cinematic: {
+    'Strings': {
+      intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      climax:  [true, true, true, false, true, true, true, false, true, true, true, false, true, true, true, true],
+      resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Brass': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, false],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Timpani': {
+      intro:   [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, true],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'Sub': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+  },
+
+  // === Minimal Techno ===
+  'minimal-techno': {
+    'Kick': {
+      intro:   [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      build:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      climax:  [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      resolve: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
+    'HiHat': {
+      intro:   [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      build:   [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      climax:  [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      resolve: [false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false],
+    },
+    'Clap': {
+      intro:   [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      build:   [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      climax:  [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      resolve: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
     },
   },
 };
+
+/**
+ * Get pattern for voice type in a specific phase
+ * Falls back to closest match if exact style/voice not found
+ */
+function getPhasePattern(style, voiceType, phase) {
+  // Direct match
+  if (PATTERN_VARIATIONS[style]?.[voiceType]?.[phase]) {
+    return PATTERN_VARIATIONS[style][voiceType][phase];
+  }
+
+  // Try generic voice type matching
+  const voiceLower = voiceType.toLowerCase();
+  for (const [styleKey, voices] of Object.entries(PATTERN_VARIATIONS)) {
+    for (const [voiceKey, patterns] of Object.entries(voices)) {
+      if (voiceKey.toLowerCase().includes(voiceLower) ||
+          voiceLower.includes(voiceKey.toLowerCase())) {
+        if (patterns[phase]) return patterns[phase];
+      }
+    }
+  }
+
+  // Default fallback patterns - denser to ensure audible content
+  const defaultPatterns = {
+    intro:   [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+    build:   [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+    climax:  [true, true, true, false, true, true, true, false, true, true, true, false, true, true, true, true],
+    resolve: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false],
+  };
+
+  return defaultPatterns[phase] || defaultPatterns.build;
+}
+
+// ============================================
+// ORCHESTRATION BY PHASE
+// ============================================
+
+/**
+ * Voice orchestration per phase by style
+ * Defines which voices are active in each phase
+ */
+const ORCHESTRATION = {
+  electronic: {
+    intro:   ['Kick', 'HiHat'],
+    build:   ['Kick', 'HiHat', 'Snare', 'Bass'],
+    climax:  ['Kick', 'HiHat', 'Snare', 'Bass', 'Lead', 'Pad'],
+    resolve: ['Kick', 'Pad'],
+  },
+  trap: {
+    intro:   ['HiHat', '808'],
+    build:   ['HiHat', '808', 'Snare'],
+    climax:  ['HiHat', '808', 'Snare', 'Lead', 'Pad'],
+    resolve: ['808', 'Pad'],
+  },
+  dnb: {
+    intro:   ['HiHat'],
+    build:   ['HiHat', 'Kick', 'Snare'],
+    climax:  ['HiHat', 'Kick', 'Snare', 'Bass', 'Lead'],
+    resolve: ['HiHat', 'Bass'],
+  },
+  jazz: {
+    intro:   ['Ride', 'Bass'],
+    build:   ['Ride', 'Bass', 'Piano'],
+    climax:  ['Ride', 'Snare', 'Bass', 'Piano', 'Lead'],
+    resolve: ['Ride', 'Piano'],
+  },
+  'lo-fi': {
+    intro:   ['Kick', 'HiHat'],
+    build:   ['Kick', 'HiHat', 'Snare', 'Bass'],
+    climax:  ['Kick', 'HiHat', 'Snare', 'Bass', 'Keys', 'Lead'],
+    resolve: ['Kick', 'Keys'],
+  },
+  ambient: {
+    intro:   ['Pad'],
+    build:   ['Pad', 'Lead'],
+    climax:  ['Pad', 'Lead', 'Bass'],
+    resolve: ['Pad'],
+  },
+  orchestral: {
+    intro:   ['Strings'],
+    build:   ['Strings', 'Brass'],
+    climax:  ['Strings', 'Brass', 'Timpani', 'Choir'],
+    resolve: ['Strings'],
+  },
+  'minimal-techno': {
+    intro:   ['Kick'],
+    build:   ['Kick', 'HiHat'],
+    climax:  ['Kick', 'HiHat', 'Clap', 'Bass'],
+    resolve: ['Kick'],
+  },
+  synthwave: {
+    intro:   ['Pad', 'Arp'],
+    build:   ['Pad', 'Arp', 'Kick', 'Snare'],
+    climax:  ['Pad', 'Arp', 'Kick', 'Snare', 'Bass', 'Lead'],
+    resolve: ['Pad', 'Lead'],
+  },
+  cinematic: {
+    intro:   ['Strings', 'Pad'],
+    build:   ['Strings', 'Pad', 'Bass'],
+    climax:  ['Strings', 'Brass', 'Timpani', 'Bass', 'Choir'],
+    resolve: ['Strings', 'Pad'],
+  },
+  // Default fallback
+  default: {
+    intro:   ['Kick', 'HiHat'],
+    build:   ['Kick', 'HiHat', 'Snare', 'Bass'],
+    climax:  ['Kick', 'HiHat', 'Snare', 'Bass', 'Lead', 'Pad'],
+    resolve: ['Kick', 'Pad'],
+  },
+};
+
+/**
+ * Get orchestration for a style and phase
+ * @param {string} style - Style name
+ * @param {string} phase - Phase name
+ * @returns {string[]} Array of active voice names
+ */
+function getOrchestration(style, phase) {
+  return ORCHESTRATION[style]?.[phase] || ORCHESTRATION.default[phase] || ORCHESTRATION.default.climax;
+}
+
+/**
+ * Check if a voice should be active in a given phase
+ * @param {string} voiceName - Voice name
+ * @param {string} style - Style name
+ * @param {string} phase - Phase name
+ * @returns {boolean} Whether voice should be active
+ */
+function isVoiceActiveInPhase(voiceName, style, phase) {
+  const activeVoices = getOrchestration(style, phase);
+  const voiceLower = voiceName.toLowerCase();
+
+  return activeVoices.some(v =>
+    v.toLowerCase() === voiceLower ||
+    voiceLower.includes(v.toLowerCase()) ||
+    v.toLowerCase().includes(voiceLower)
+  );
+}
 
 // ============================================
 // VOICE LEADING RULES
@@ -634,25 +1055,31 @@ const VOICE_LEADING_RULES = {
  */
 function selectPatternVariation(voiceName, style, barInPhrase, phase) {
   const styleVariations = PATTERN_VARIATIONS[style];
-  if (!styleVariations) return null;
 
-  const voiceVariations = styleVariations[voiceName];
-  if (!voiceVariations) return null;
+  // Try direct style + voice match
+  if (styleVariations) {
+    const voiceVariations = styleVariations[voiceName];
+    if (voiceVariations) {
+      // Use phase-based patterns (intro/build/climax/resolve)
+      if (voiceVariations[phase]) {
+        return voiceVariations[phase];
+      }
 
-  // Last bar of phrase = fill (only in build/climax)
-  if (barInPhrase === 3 && (phase === 'build' || phase === 'climax')) {
-    return voiceVariations.fill || voiceVariations.base;
-  }
-
-  // First bar after fill = sparse for contrast
-  if (barInPhrase === 0 && phase !== 'intro') {
-    // 30% chance of sparse variation for musical breathing
-    if (Math.random() < 0.3) {
-      return voiceVariations.sparse || voiceVariations.base;
+      // Fallback to legacy base/fill/sparse if exists
+      if (voiceVariations.base) {
+        if (barInPhrase === 3 && (phase === 'build' || phase === 'climax')) {
+          return voiceVariations.fill || voiceVariations.base;
+        }
+        if (barInPhrase === 0 && phase !== 'intro' && Math.random() < 0.3) {
+          return voiceVariations.sparse || voiceVariations.base;
+        }
+        return voiceVariations.base;
+      }
     }
   }
 
-  return voiceVariations.base;
+  // Use getPhasePattern for fallback (handles generic matching)
+  return getPhasePattern(style, voiceName, phase);
 }
 
 /**
@@ -2050,6 +2477,10 @@ function generatePhaseAwareVoice(voiceConfig, preset, totalBars, phaseStructure,
       pattern = variation;
     }
 
+    // Apply energy-based density modulation
+    // High energy = denser patterns, low energy = sparser
+    pattern = applyEnergyDensity(pattern, energy, phase, voiceConfig.type);
+
     // Apply pattern to this bar's steps
     const barStartStep = bar * stepsPerBar;
     for (let i = 0; i < stepsPerBar; i++) {
@@ -2113,19 +2544,35 @@ function generatePhaseAwareVoice(voiceConfig, preset, totalBars, phaseStructure,
  * Get default pattern for voice type
  */
 function getDefaultPatternForType(type, phase) {
+  // Phase-aware defaults with appropriate density
   if (type === 'texture') {
-    return RHYTHM_PATTERNS.halfNotes;
+    return phase === 'climax' ? RHYTHM_PATTERNS.quarterNotes : RHYTHM_PATTERNS.halfNotes;
   }
   if (type === 'pad' || type === 'chord') {
-    return phase === 'climax' ? RHYTHM_PATTERNS.halfNotes : RHYTHM_PATTERNS.sparse;
+    // Pads/chords: quarter notes for build/climax, half notes for intro/resolve
+    if (phase === 'climax') return RHYTHM_PATTERNS.straight8;
+    if (phase === 'build') return RHYTHM_PATTERNS.quarterNotes;
+    return RHYTHM_PATTERNS.halfNotes;
   }
   if (type === 'bass') {
-    return phase === 'climax' ? RHYTHM_PATTERNS.straight8 : RHYTHM_PATTERNS.quarterNotes;
+    // Bass: eighth notes for climax, quarters otherwise
+    if (phase === 'climax') return RHYTHM_PATTERNS.straight8;
+    return RHYTHM_PATTERNS.quarterNotes;
   }
   if (type === 'lead' || type === 'arp') {
-    return phase === 'climax'
-      ? [true, false, true, false, true, false, true, true, true, false, true, false, true, true, true, false]
-      : RHYTHM_PATTERNS.quarterNotes;
+    if (phase === 'climax') {
+      return [true, false, true, false, true, false, true, true, true, false, true, false, true, true, true, false];
+    }
+    if (phase === 'build') {
+      return RHYTHM_PATTERNS.straight8;
+    }
+    return RHYTHM_PATTERNS.quarterNotes;
+  }
+  if (type === 'drum') {
+    // Drums: denser in climax
+    if (phase === 'climax') return RHYTHM_PATTERNS.straight8;
+    if (phase === 'build') return RHYTHM_PATTERNS.quarterNotes;
+    return RHYTHM_PATTERNS.halfNotes;
   }
   return RHYTHM_PATTERNS.quarterNotes;
 }
@@ -2151,6 +2598,86 @@ function getDurationForType(type, pattern, currentIndex, stepsPerBar) {
 }
 
 /**
+ * Apply energy-based density modulation to a pattern
+ * High energy = denser patterns, low energy = sparser
+ * @param {boolean[]} pattern - Base pattern (16 steps)
+ * @param {number} energy - Energy level (0-100)
+ * @param {string} phase - Current phase
+ * @param {string} voiceType - Voice type
+ * @returns {boolean[]} Modified pattern
+ */
+function applyEnergyDensity(pattern, energy, phase, voiceType) {
+  // Only slightly modify intro/resolve patterns (preserve dynamics but ensure minimum activity)
+  const result = [...pattern];
+  const energyFactor = energy / 100;
+  const currentDensity = pattern.filter(Boolean).length;
+
+  // For intro/resolve, just ensure minimum density if energy is high
+  if (phase === 'intro' || phase === 'resolve') {
+    if (energyFactor > 0.8 && currentDensity < 4) {
+      // Add downbeats at minimum for high energy
+      [0, 4, 8, 12].forEach(pos => {
+        if (!result[pos]) result[pos] = true;
+      });
+    }
+    return result;
+  }
+
+  // Calculate how many additional triggers to add based on energy
+  // More aggressive formula: at 100% energy, aim for 8-12 triggers minimum
+  // At 50% energy, keep as-is
+  // Below 50%, thin out
+  if (energyFactor > 0.7) {
+    // High energy: add more triggers
+    // Use minimum of 4 additional triggers at high energy, scaling up
+    const baseAdditional = Math.max(4, Math.floor((energyFactor - 0.5) * 16));
+    const additionalTriggers = Math.min(baseAdditional, 16 - currentDensity);
+
+    // Find positions where we can add triggers (offbeats preferred)
+    const emptyPositions = [];
+    for (let i = 0; i < 16; i++) {
+      if (!result[i]) {
+        // Prefer offbeat positions for added density
+        const isOffbeat = i % 2 === 1;
+        emptyPositions.push({ pos: i, priority: isOffbeat ? 2 : 1 });
+      }
+    }
+
+    // Sort by priority (offbeats first) and add triggers
+    emptyPositions.sort((a, b) => b.priority - a.priority);
+    for (let i = 0; i < Math.min(additionalTriggers, emptyPositions.length); i++) {
+      // For pads/chords, don't add too many (they sustain)
+      if ((voiceType === 'pad' || voiceType === 'chord') && i > 1) break;
+      result[emptyPositions[i].pos] = true;
+    }
+
+    // For climax at very high energy, consider even denser patterns
+    if (phase === 'climax' && energyFactor > 0.9) {
+      // Add a few more on strong beats if not already there
+      [0, 4, 8, 12].forEach(pos => {
+        if (!result[pos] && Math.random() < 0.5) {
+          result[pos] = true;
+        }
+      });
+    }
+  } else if (energyFactor < 0.4) {
+    // Low energy: thin out the pattern
+    const toRemove = Math.floor((0.5 - energyFactor) * currentDensity);
+    let removed = 0;
+
+    // Remove from weak beats first
+    for (let i = 15; i >= 0 && removed < toRemove; i--) {
+      if (result[i] && i % 4 !== 0) { // Keep downbeats
+        result[i] = false;
+        removed++;
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * Add a fill pattern at the end of a phrase
  */
 function addFillPattern(steps, barStartStep, stepsPerBar, sound) {
@@ -2167,10 +2694,19 @@ function addFillPattern(steps, barStartStep, stepsPerBar, sound) {
 }
 
 /**
- * Generate music based on current options - NEW PHASE-BASED SYSTEM
+ * Generate music based on current options - AI-FIRST SYSTEM
+ * Uses AI generation with audiosculpt presets, falls back to procedural if needed.
  */
 export function generate() {
-  // Check if we have a new-style preset
+  // Try to get new audiosculpt-style preset first
+  const audiosculptPreset = getPreset(selectedStyle);
+
+  if (audiosculptPreset) {
+    // Use AI-first generation with new presets
+    return generateAIFirst(audiosculptPreset);
+  }
+
+  // Fallback to old system for styles not yet migrated
   const preset = STYLE_PRESETS[selectedStyle];
   const fallbackStyle = STYLE_PATTERNS[selectedStyle];
 
@@ -2189,6 +2725,295 @@ export function generate() {
   } else {
     return generateLegacy(fallbackStyle, projectName);
   }
+}
+
+/**
+ * AI-FIRST generation using audiosculpt presets
+ * @param {Object} preset - Audiosculpt preset from js/presets/
+ * @returns {Promise<Object>} Generated project
+ */
+async function generateAIFirst(preset) {
+  const styleName = preset.style || selectedStyle;
+  const projectName = `${styleName} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+
+  // Show loading state
+  eventBus.emit(Events.TOAST_SHOW, {
+    message: 'AI is composing with Strudel patterns...',
+    type: 'info',
+    duration: 15000,
+  });
+
+  try {
+    // Get family for this style
+    const family = getFamily(styleName);
+
+    // Build prompts
+    const systemPrompt = buildSystemPrompt(family);
+    const userPrompt = buildUserPrompt(preset, {
+      duration: selectedDuration,
+      energy: energyLevel / 100
+    });
+
+    // Call AI
+    const result = await openRouterClient.generate(systemPrompt, userPrompt);
+
+    if (!result.data) {
+      throw new Error('No data returned from AI');
+    }
+
+    // Validate and post-process
+    const validation = validateAIOutputNew(result.data, preset);
+    if (!validation.valid) {
+      console.warn('AI output validation warnings:', validation.warnings);
+      if (validation.errors.length > 0) {
+        console.error('AI output validation errors:', validation.errors);
+      }
+    }
+
+    const processed = postProcessAIOutput(result.data);
+
+    // Create project from AI output
+    const project = createProjectFromAINew(processed, preset, projectName);
+
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: `AI generated ${project.voices.length} voices in ${styleName} style`,
+      type: 'success',
+    });
+
+    return project;
+
+  } catch (error) {
+    console.error('AI generation failed:', error);
+
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: `AI unavailable, using preset patterns...`,
+      type: 'warning',
+    });
+
+    // Fallback to preset patterns (no AI)
+    return createProjectFromPresetPatterns(preset, projectName);
+  }
+}
+
+/**
+ * Create project from AI-generated data (new format with patternCode per phase)
+ * @param {Object} aiData - Processed AI output
+ * @param {Object} preset - Original preset
+ * @param {string} projectName - Project name
+ * @returns {Object} Project result
+ */
+function createProjectFromAINew(aiData, preset, projectName) {
+  // Create new project
+  state.newProject(projectName);
+
+  // Set tempo and other project properties
+  const tempo = aiData.tempo || preset.temporal?.bpm || 120;
+  state.setTempo(tempo);
+
+  // Set scale
+  if (aiData.key) {
+    state.setScale(aiData.key.root || 'C', aiData.key.scale || 'minor');
+  }
+
+  // Calculate loop length
+  const bars = aiData.totalBars || durationToBars(selectedDuration, tempo);
+  const stepsPerBar = 16;
+  state.get('transport').loopEnd = bars * stepsPerBar;
+
+  // Get phase structure
+  const phases = aiData.phases || calculatePhases(bars);
+
+  // Create voices
+  const createdVoices = [];
+
+  for (const voiceData of aiData.voices) {
+    // Get pattern for climax phase (default display)
+    const climaxPattern = voiceData.patternCode?.climax || voiceData.patternCode || '';
+
+    // Parse pattern to steps and notes
+    const steps = parseStrudelToSteps(climaxPattern, stepsPerBar);
+    const notes = voiceData.type !== 'drum' ? parseStrudelToNotes(climaxPattern, stepsPerBar) : [];
+
+    // Determine source type
+    const sourceType = voiceData.type === 'drum' ? 'drum' : 'synth';
+
+    const voice = state.addVoice({
+      name: voiceData.name,
+      icon: getIconForType(voiceData.type),
+      type: 'pattern',
+      sourceType: sourceType,
+      patternCode: voiceData.patternCode, // Keep full phase patterns
+      content: {
+        steps: steps,
+        notes: notes,
+        melodicNotes: notes.map(n => n.pitch),
+        sound: voiceData.sound || getDefaultSound(voiceData.type),
+      },
+      effects: voiceData.effects || {},
+    });
+
+    createdVoices.push(voice);
+  }
+
+  return {
+    projectName,
+    style: preset.style,
+    voices: createdVoices,
+    tempo,
+    bars,
+    phases,
+    chordProgression: aiData.chordProgression || preset.progression?.chords,
+  };
+}
+
+/**
+ * Create project from preset patterns only (fallback when AI unavailable)
+ * @param {Object} preset - Audiosculpt preset
+ * @param {string} projectName - Project name
+ * @returns {Object} Project result
+ */
+function createProjectFromPresetPatterns(preset, projectName) {
+  state.newProject(projectName);
+
+  // Set tempo
+  const tempo = preset.temporal?.bpm || 120;
+  state.setTempo(tempo);
+
+  // Parse key
+  const keyMatch = (preset.key || 'A minor').match(/^([A-G][#b]?)\s*(.*)$/i);
+  if (keyMatch) {
+    state.setScale(keyMatch[1], keyMatch[2] || 'minor');
+  }
+
+  // Calculate bars
+  const bars = durationToBars(selectedDuration, tempo);
+  const stepsPerBar = 16;
+  state.get('transport').loopEnd = bars * stepsPerBar;
+
+  const phases = calculatePhases(bars);
+  const createdVoices = [];
+
+  // Get patterns from preset
+  const presetPatterns = preset.patterns || {};
+  const arc = preset.arc || {};
+  const sounds = preset.sounds || {};
+
+  // Create voices based on arc definition
+  const climaxLayers = arc.climax?.layers || Object.keys(sounds);
+
+  for (const layer of climaxLayers) {
+    // Get pattern for this layer from climax phase
+    let patternCode = presetPatterns.climax?.[layer];
+
+    // Try other phases if climax doesn't have it
+    if (!patternCode || patternCode === 'silent') {
+      patternCode = presetPatterns.build?.[layer] ||
+                    presetPatterns.intro?.[layer] ||
+                    presetPatterns.resolve?.[layer];
+    }
+
+    if (!patternCode || patternCode === 'silent') continue;
+
+    // Build full patternCode object with all phases
+    const fullPatternCode = {
+      intro: presetPatterns.intro?.[layer] || 'silent',
+      build: presetPatterns.build?.[layer] || 'silent',
+      climax: presetPatterns.climax?.[layer] || patternCode,
+      resolve: presetPatterns.resolve?.[layer] || 'silent',
+    };
+
+    // Parse the climax pattern
+    const steps = parseStrudelToSteps(patternCode, stepsPerBar);
+    const notes = parseStrudelToNotes(patternCode, stepsPerBar);
+
+    // Determine type from layer name
+    const type = guessTypeFromLayer(layer);
+
+    const voice = state.addVoice({
+      name: capitalizeFirst(layer),
+      icon: getIconForType(type),
+      type: 'pattern',
+      sourceType: type === 'drum' ? 'drum' : 'synth',
+      patternCode: fullPatternCode,
+      content: {
+        steps,
+        notes,
+        melodicNotes: notes.map(n => n.pitch),
+        sound: sounds[layer]?.source || layer,
+      },
+      volume: sounds[layer]?.gain || 0.7,
+      effects: {
+        room: sounds[layer]?.room,
+        lpf: sounds[layer]?.lpf,
+        hpf: sounds[layer]?.hpf,
+        delay: sounds[layer]?.delay,
+      },
+    });
+
+    createdVoices.push(voice);
+  }
+
+  eventBus.emit(Events.TOAST_SHOW, {
+    message: `Created ${createdVoices.length} voices from ${preset.style} preset patterns`,
+    type: 'success',
+  });
+
+  return {
+    projectName,
+    style: preset.style,
+    voices: createdVoices,
+    tempo,
+    bars,
+    phases,
+  };
+}
+
+// Helper functions for AI-first generation
+
+function getIconForType(type) {
+  const icons = {
+    drum: '🥁',
+    kick: '🔊',
+    snare: '🥁',
+    hihat: '🎩',
+    bass: '🎸',
+    pad: '🌊',
+    lead: '🎹',
+    arp: '✨',
+    melodic: '🎵',
+    rhythm: '🥁',
+  };
+  return icons[type] || '🎵';
+}
+
+function getDefaultSound(type) {
+  const sounds = {
+    drum: 'bd',
+    kick: 'bd',
+    snare: 'sd',
+    hihat: 'hh',
+    bass: 'triangle',
+    pad: 'sine',
+    lead: 'sawtooth',
+    arp: 'square',
+  };
+  return sounds[type] || 'sine';
+}
+
+function guessTypeFromLayer(layer) {
+  const lower = layer.toLowerCase();
+  if (['kick', 'snare', 'hihat', 'hat', 'perc', 'rhythm', 'brush', 'ride'].some(d => lower.includes(d))) {
+    return 'drum';
+  }
+  if (lower.includes('bass')) return 'bass';
+  if (lower.includes('pad') || lower.includes('drone')) return 'pad';
+  if (lower.includes('lead') || lower.includes('melody')) return 'lead';
+  if (lower.includes('arp')) return 'arp';
+  return 'melodic';
+}
+
+function capitalizeFirst(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
@@ -2472,3 +3297,546 @@ export function resetOptions() {
   energyLevel = 70;
   updateSummary();
 }
+
+// ============================================================================
+// AI GENERATION (OpenRouter / Trinity Large)
+// ============================================================================
+
+// AI generation mode flag
+let useAIGeneration = true;
+
+/**
+ * Enable or disable AI generation
+ */
+export function setUseAIGeneration(enabled) {
+  useAIGeneration = enabled;
+}
+
+/**
+ * Check if AI generation is enabled
+ */
+export function isAIGenerationEnabled() {
+  return useAIGeneration;
+}
+
+/**
+ * Map style ID to AI prompt genre
+ */
+const STYLE_TO_GENRE = {
+  electronic: 'electronic',
+  trap: 'hiphop',
+  dnb: 'electronic',
+  'minimal-techno': 'electronic',
+  synthwave: 'electronic',
+  glitch: 'electronic',
+  industrial: 'electronic',
+  dramatic: 'cinematic',
+  horror: 'ambient',
+  jazz: 'jazz',
+  orchestral: 'orchestral',
+  'neo-classical': 'orchestral',
+  acoustic: 'orchestral',
+  cinematic: 'cinematic',
+  corporate: 'electronic',
+  upbeat: 'electronic',
+  world: 'orchestral',
+  ambient: 'ambient',
+  chillwave: 'ambient',
+  'lo-fi': 'lofi',
+};
+
+/**
+ * Generate music using AI (Trinity Large via OpenRouter)
+ * Now uses audiosculpt presets for better results.
+ * Falls back to procedural generation if AI fails.
+ */
+export async function generateWithAI(genre = null) {
+  // Map genre to style if needed
+  const targetStyle = genre || selectedStyle;
+
+  // Try to get audiosculpt preset
+  const preset = getPreset(targetStyle);
+
+  if (preset) {
+    // Use new AI-first system with preset
+    return generateAIFirst(preset);
+  }
+
+  // Legacy fallback for unmapped genres
+  const targetGenre = STYLE_TO_GENRE[targetStyle] || 'electronic';
+  const prompt = PROJECT_PROMPTS?.[targetGenre];
+
+  if (!prompt) {
+    console.warn(`No AI prompt for genre: ${targetGenre}, falling back to procedural`);
+    return generate();
+  }
+
+  // Show loading state
+  eventBus.emit(Events.TOAST_SHOW, {
+    message: 'AI is composing...',
+    type: 'info',
+    duration: 10000,
+  });
+
+  try {
+    const result = await openRouterClient.generate(SYSTEM_PROMPT, prompt);
+
+    if (!result.data) {
+      throw new Error('No data returned from AI');
+    }
+
+    // Validate and convert AI output
+    const validated = validateAIOutput(result.data);
+
+    if (!validated) {
+      throw new Error('AI output failed validation');
+    }
+
+    // Create project from AI output
+    const project = createProjectFromAI(validated, targetGenre);
+
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: `AI generated ${project.voices.length} voices in ${targetGenre} style`,
+      type: 'success',
+    });
+
+    return project;
+
+  } catch (error) {
+    console.error('AI generation failed:', error);
+
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: `AI generation failed: ${error.message}. Using procedural.`,
+      type: 'warning',
+    });
+
+    // Fall back to procedural generation
+    return generate();
+  }
+}
+
+/**
+ * Generate a single voice using AI
+ * Now uses audiosculpt presets for context.
+ * @param {string} voiceType - 'drum', 'bass', or 'melodic'
+ * @param {string} voiceRole - for melodic: 'lead', 'arp', or 'pad'
+ * @returns {Promise<Object>} Voice data
+ */
+export async function generateVoiceWithAI(voiceType, voiceRole = 'lead') {
+  const projectState = {
+    tempo: state.get('transport').tempo,
+    swing: 0,
+    key: state.getScale(),
+    bars: Math.ceil(state.get('transport').loopEnd / 16) || 4,
+    voices: state.getVoices(),
+    chordProgression: ['Am', 'Dm', 'G', 'C'], // Default, could be extracted
+    style: selectedStyle,
+  };
+
+  // Try to get audiosculpt preset for better context
+  const preset = getPreset(selectedStyle);
+
+  if (preset) {
+    // Use new prompt system
+    const voiceContext = {
+      type: voiceType,
+      role: voiceRole,
+      name: `${voiceRole} ${voiceType}`,
+    };
+
+    const { systemPrompt, userPrompt } = buildVoicePrompt(projectState, voiceContext, preset);
+
+    try {
+      const result = await openRouterClient.generate(systemPrompt, userPrompt);
+
+      if (!result.data) {
+        throw new Error('No data from AI');
+      }
+
+      // Process the voice data
+      const processed = postProcessAIOutput({ voices: [result.data] });
+      const voiceData = processed.voices[0];
+
+      // Parse patterns to steps/notes
+      const climaxPattern = voiceData.patternCode?.climax || voiceData.patternCode || '';
+      const steps = parseStrudelToSteps(climaxPattern, 16);
+      const notes = voiceType !== 'drum' ? parseStrudelToNotes(climaxPattern, 16) : [];
+
+      return {
+        ...voiceData,
+        steps,
+        notes,
+        melodicNotes: notes.map(n => n.pitch),
+      };
+
+    } catch (error) {
+      console.error('AI voice generation failed:', error);
+      throw error;
+    }
+  }
+
+  // Legacy fallback
+  const context = buildVoiceContext?.(projectState, voiceType, voiceRole) || {};
+  const template = VOICE_PROMPTS?.[voiceType];
+
+  if (!template) {
+    throw new Error(`No prompt template for voice type: ${voiceType}`);
+  }
+
+  const prompt = fillPromptTemplate?.(template, context) || template;
+
+  try {
+    const result = await openRouterClient.generate(SYSTEM_PROMPT, prompt);
+
+    if (!result.data) {
+      throw new Error('No data from AI');
+    }
+
+    // Validate voice data
+    const validated = validateVoiceData(result.data);
+
+    if (!validated) {
+      throw new Error('Voice data failed validation');
+    }
+
+    // Apply music theory validation layer
+    const enhanced = enhanceVoiceData(validated, projectState);
+
+    return enhanced;
+
+  } catch (error) {
+    console.error('AI voice generation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Validate AI output structure
+ */
+function validateAIOutput(data) {
+  // Check required fields
+  if (!data.tempo || typeof data.tempo !== 'number') {
+    data.tempo = 120;
+  }
+  data.tempo = Math.max(60, Math.min(200, data.tempo));
+
+  if (!data.swing || typeof data.swing !== 'number') {
+    data.swing = 0;
+  }
+  data.swing = Math.max(0, Math.min(0.67, data.swing));
+
+  if (!data.key || typeof data.key !== 'object') {
+    data.key = { root: 'C', scale: 'minor' };
+  }
+
+  if (!data.bars || typeof data.bars !== 'number') {
+    data.bars = 4;
+  }
+  data.bars = Math.max(1, Math.min(64, data.bars));
+
+  if (!Array.isArray(data.voices) || data.voices.length === 0) {
+    console.error('No voices in AI output');
+    return null;
+  }
+
+  // Validate each voice
+  data.voices = data.voices.map(voice => validateVoiceData(voice)).filter(Boolean);
+
+  if (data.voices.length === 0) {
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Validate individual voice data
+ */
+function validateVoiceData(voice) {
+  if (!voice || typeof voice !== 'object') {
+    return null;
+  }
+
+  // Ensure required fields
+  if (!voice.name) {
+    voice.name = voice.type === 'drum' ? 'Drum' : 'Voice';
+  }
+
+  if (!voice.type) {
+    voice.type = voice.steps ? 'drum' : 'melodic';
+  }
+
+  if (!voice.sound) {
+    voice.sound = voice.type === 'drum' ? 'kick' : 'sawtooth';
+  }
+
+  // Validate steps array
+  if (voice.steps) {
+    if (!Array.isArray(voice.steps)) {
+      voice.steps = new Array(64).fill(false);
+    }
+    voice.steps = voice.steps.map(s => Boolean(s));
+  }
+
+  // Validate notes array
+  if (voice.notes) {
+    if (!Array.isArray(voice.notes)) {
+      voice.notes = [];
+    }
+    voice.notes = voice.notes.filter(note => {
+      if (!note || typeof note !== 'object') return false;
+      if (typeof note.pitch !== 'number') return false;
+      if (typeof note.startBeat !== 'number') return false;
+      if (typeof note.durationBeats !== 'number') return false;
+
+      // Clamp MIDI range
+      note.pitch = Math.max(0, Math.min(127, Math.round(note.pitch)));
+      note.startBeat = Math.max(0, note.startBeat);
+      note.durationBeats = Math.max(0.125, note.durationBeats);
+      note.velocity = Math.max(1, Math.min(127, note.velocity || 100));
+
+      return true;
+    });
+  }
+
+  // Validate velocity
+  if (voice.velocity) {
+    voice.velocity = Math.max(1, Math.min(127, voice.velocity));
+  } else {
+    voice.velocity = 100;
+  }
+
+  return voice;
+}
+
+/**
+ * Apply music theory validation/enhancement to voice data
+ * Uses quantizeToScale and voice leading rules
+ */
+function enhanceVoiceData(voice, projectState) {
+  const { key, swing } = projectState;
+
+  // Apply scale quantization to melodic voices
+  if (voice.notes && voice.notes.length > 0 && voice.type !== 'drum') {
+    voice.notes = voice.notes.map(note => {
+      // Quantize to scale
+      const quantized = quantizeToScale(note.pitch, key.root, key.scale || key.type);
+      return {
+        ...note,
+        pitch: quantized,
+      };
+    });
+
+    // Apply basic voice leading (limit large jumps)
+    voice.notes = applyBasicVoiceLeading(voice.notes, voice.type);
+  }
+
+  // Apply swing timing
+  if (swing > 0 && voice.notes) {
+    voice.notes = voice.notes.map(note => {
+      // Apply swing to off-beat notes
+      if (note.startBeat % 1 >= 0.4 && note.startBeat % 1 <= 0.6) {
+        return {
+          ...note,
+          startBeat: note.startBeat + swing * 0.1,
+        };
+      }
+      return note;
+    });
+  }
+
+  // Apply velocity humanization
+  if (voice.notes) {
+    voice.notes = voice.notes.map(note => ({
+      ...note,
+      velocity: Math.round(note.velocity * (0.9 + Math.random() * 0.2)),
+    }));
+  }
+
+  return voice;
+}
+
+/**
+ * Apply basic voice leading rules
+ */
+function applyBasicVoiceLeading(notes, voiceType) {
+  if (notes.length < 2) return notes;
+
+  const maxInterval = voiceType === 'bass' ? 7 : voiceType === 'pad' ? 5 : 12;
+
+  for (let i = 1; i < notes.length; i++) {
+    const prev = notes[i - 1];
+    const curr = notes[i];
+    const interval = Math.abs(curr.pitch - prev.pitch);
+
+    if (interval > maxInterval) {
+      // Move note closer by octave
+      if (curr.pitch > prev.pitch) {
+        while (curr.pitch - prev.pitch > maxInterval && curr.pitch > 24) {
+          curr.pitch -= 12;
+        }
+      } else {
+        while (prev.pitch - curr.pitch > maxInterval && curr.pitch < 108) {
+          curr.pitch += 12;
+        }
+      }
+    }
+  }
+
+  return notes;
+}
+
+/**
+ * Create SoundSculpt project from validated AI output
+ */
+function createProjectFromAI(aiData, genre) {
+  // Create new project
+  const styleName = STYLES.find(s => s.id === selectedStyle)?.name || genre;
+  const projectName = `AI ${styleName} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+  state.newProject(projectName);
+
+  // Set tempo and scale
+  state.setTempo(aiData.tempo);
+  if (aiData.key) {
+    state.setScaleRoot(aiData.key.root);
+    state.setScaleType(aiData.key.scale);
+  }
+
+  // Set loop length
+  const stepsPerBar = 16;
+  const totalSteps = aiData.bars * stepsPerBar;
+  state.get('transport').loopEnd = totalSteps;
+
+  const createdVoices = [];
+
+  // Create voices
+  for (const voiceData of aiData.voices) {
+    const sourceType = voiceData.type === 'drum' ? 'drum' : 'synth';
+
+    // Convert notes to content format
+    let content;
+    if (voiceData.steps) {
+      content = {
+        steps: voiceData.steps,
+        notes: [],
+        melodicNotes: [],
+      };
+    } else if (voiceData.notes) {
+      // Generate steps from notes for sequencer view
+      const steps = new Array(totalSteps).fill(false);
+      voiceData.notes.forEach(note => {
+        const stepIndex = Math.floor(note.startBeat * 4); // 4 steps per beat
+        if (stepIndex >= 0 && stepIndex < totalSteps) {
+          steps[stepIndex] = true;
+        }
+      });
+
+      content = {
+        steps,
+        notes: voiceData.notes,
+        melodicNotes: voiceData.notes.map(n => n.pitch),
+      };
+    } else {
+      content = {
+        steps: new Array(totalSteps).fill(false),
+        notes: [],
+        melodicNotes: [],
+      };
+    }
+
+    // Map AI sounds to SoundSculpt sounds
+    const soundMap = {
+      kick: 'kick',
+      snare: 'snare',
+      hihat: 'hihat',
+      clap: 'clap',
+      tom: 'tom',
+      cymbal: 'cymbal',
+      perc: 'perc',
+      sine: 'sine',
+      triangle: 'triangle',
+      sawtooth: 'sawtooth',
+      square: 'square',
+      pad: 'triangle',
+    };
+
+    // Map voice type/sound to synth preset for proper timbre
+    const synthPresetMap = {
+      bass: 'bass',
+      lead: 'lead',
+      pad: 'pad',
+      arp: 'arp',
+      piano: 'piano',
+      keys: 'piano',
+      strings: 'strings',
+      brass: 'brass',
+      pluck: 'pluck',
+    };
+    const synthPreset = synthPresetMap[voiceData.type] ||
+                        synthPresetMap[voiceData.sound] ||
+                        synthPresetMap[voiceData.name?.toLowerCase()] ||
+                        (voiceData.type === 'melodic' ? 'lead' : 'default');
+
+    const voice = state.addVoice({
+      name: voiceData.name,
+      icon: getVoiceIcon(voiceData.type, voiceData.sound),
+      type: 'pattern',
+      sourceType,
+      sound: soundMap[voiceData.sound] || voiceData.sound,
+      synthPreset,
+      content,
+    });
+
+    createdVoices.push(voice);
+  }
+
+  return {
+    projectName,
+    style: selectedStyle,
+    voices: createdVoices,
+    tempo: aiData.tempo,
+    bars: aiData.bars,
+    aiGenerated: true,
+    model: openRouterClient.getCurrentModel(),
+    musicalIntent: aiData.musicalIntent,
+  };
+}
+
+/**
+ * Get appropriate icon for voice type
+ */
+function getVoiceIcon(type, sound) {
+  const icons = {
+    kick: '🥁',
+    snare: '🪘',
+    hihat: '🔔',
+    clap: '👏',
+    tom: '🥁',
+    cymbal: '🔔',
+    perc: '🎵',
+    bass: '🎸',
+    melodic: '🎹',
+    pad: '🎛️',
+    lead: '🎺',
+    arp: '🎹',
+  };
+
+  if (type === 'drum') {
+    return icons[sound] || '🥁';
+  }
+  return icons[type] || '🎹';
+}
+
+/**
+ * AI-powered project generation for welcome screen
+ * Simplified genre selection (5 main genres)
+ */
+export const AI_GENRES = [
+  { id: 'cinematic', name: 'Cinematic', icon: '🎬', description: 'Epic, emotional soundscapes' },
+  { id: 'electronic', name: 'Electronic', icon: '🎛️', description: 'Driving synth-based tracks' },
+  { id: 'ambient', name: 'Ambient', icon: '🌊', description: 'Atmospheric, meditative' },
+  { id: 'hiphop', name: 'Hip-Hop', icon: '🎤', description: 'Trap and boom-bap beats' },
+  { id: 'jazz', name: 'Jazz', icon: '🎷', description: 'Sophisticated swing and harmony' },
+  { id: 'lofi', name: 'Lo-Fi', icon: '📻', description: 'Warm, nostalgic chill beats' },
+  { id: 'orchestral', name: 'Orchestral', icon: '🎻', description: 'Rich symphonic textures' },
+];

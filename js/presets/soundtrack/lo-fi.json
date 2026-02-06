@@ -1,0 +1,214 @@
+{
+  "style": "lo-fi",
+  "description": "Warm, nostalgic lo-fi hip-hop with filtered piano, dusty vinyl texture, jazzy chords, and a head-nodding swing beat.",
+  "family": "modal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "chord('Ebmaj7').voicing().s('piano').lpf(1800).crush(12).room(0.35).gain(0.8)"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "s('pink').struct('t').lpf(3000).hpf(500).gain(0.4)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<eb4 g4 bb4 d5>').s('piano').lpf(1800).crush(12).room(0.35).gain(0.6)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["hihat", "vinyl_noise"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["piano"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 78,
+    "range": [70, 85],
+    "swing": 0.6,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "loop_and_fade",
+      "cadenceBars": 2,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "Eb major",
+
+  "sounds": {
+    "piano": {
+      "source": "piano",
+      "lpf": 1800,
+      "crush": 12,
+      "room": 0.35,
+      "gain": 0.6
+    },
+    "bass": {
+      "source": "triangle",
+      "lpf": 600,
+      "gain": 0.7
+    },
+    "vinyl_noise": {
+      "source": "brown",
+      "lpf": "sine.range(800,2000).slow(16)",
+      "gain": 0.15
+    },
+    "kick": {
+      "source": "bd",
+      "bank": "RolandTR606",
+      "lpf": 2500,
+      "gain": 0.55
+    },
+    "hihat": {
+      "source": "hh",
+      "bank": "RolandTR606",
+      "hpf": 6000,
+      "lpf": 2500,
+      "gain": 0.35
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "s('brown').lpf(sine.range(800,1500).slow(16)).gain(0.15)",
+      "harmony": "chord('<Fm7 Bb7 Ebmaj7 Cm7>').voicing().s('piano').lpf(1800).crush(12).room(0.35).gain(0.45).slow(8)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "stack(s('brown').lpf(sine.range(1000,2000).slow(16)).gain(0.18), s('RolandTR606_bd').struct('t ~ ~ ~ ~ ~ t/2 ~ ~ ~ t ~ ~ ~ ~ ~').gain(0.55), s('RolandTR606_hh').struct('~ ~ t ~ ~ ~ t/2 ~ ~ ~ t ~ ~ ~ t/2 ~').hpf(6000).lpf(2500).gain(0.35))",
+      "harmony": "chord('<Fm7 Bb7 Ebmaj7 Cm7>').voicing().s('piano').lpf(1800).crush(12).room(0.35).gain(0.55).slow(8)",
+      "bass": "note('<f1 ~ c2 ~ ~ ~ f1/2 ~ bb1 ~ f2 ~ ~ ~ ~ ~>').s('triangle').lpf(600).gain(0.6)"
+    },
+    "climax": {
+      "rhythm": "stack(s('brown').lpf(sine.range(1200,2500).slow(8)).gain(0.2), s('RolandTR606_bd').struct('t ~ ~ t/2 ~ ~ t/2 ~ ~ ~ t ~ ~ ~ t/2 ~').gain(0.6), s('RolandTR606_hh').struct('t/2 ~ t ~ t/2 ~ t ~ t/2 ~ t ~ t/2 ~ t/2 ~').hpf(6000).lpf(2500).gain(0.4))",
+      "harmony": "chord('<Fm7 Bb7 Ebmaj7 Cm7>').voicing().s('piano').lpf(2000).crush(12).room(0.35).gain(0.6).slow(8)",
+      "bass": "note('<f1 ~ c2 ab1/2 ~ ~ f1/2 ~ bb1 ~ f2 d2/2 ~ ~ eb1/2 ~>').s('triangle').lpf(650).gain(0.7)"
+    },
+    "resolve": {
+      "rhythm": "stack(s('brown').lpf(sine.range(800,1200).slow(16)).gain(0.12), s('RolandTR606_bd').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ t/2 ~ ~ ~ ~ ~').gain(0.4), s('RolandTR606_hh').struct('~ ~ t/2 ~ ~ ~ t/2 ~ ~ ~ t/2 ~ ~ ~ ~ ~').hpf(6000).lpf(2500).gain(0.25))",
+      "harmony": "chord('<Fm7 Bb7>').voicing().s('piano').lpf(1500).crush(12).room(0.4).gain(perlin.range(0.3,0.45)).slow(8)",
+      "bass": "note('f1').s('triangle').lpf(500).gain(perlin.range(0.3,0.5)).slow(4)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["ii7", "V7", "Imaj7", "vi7"],
+    "scale": "major",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "modal_static",
+    "field": "Major on Eb",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["vinyl_noise", "piano"], "velocity": 0.35 },
+    "build": { "layers": ["vinyl_noise", "piano", "bass", "kick", "hihat"], "velocity": 0.5 },
+    "climax": { "layers": ["vinyl_noise", "piano", "bass", "kick", "hihat"], "velocity": 0.6 },
+    "resolve": { "layers": ["vinyl_noise", "piano"], "velocity": 0.3 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 5 },
+    "climax": { "max_simultaneous_voices": 5 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 4,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "processuale",
+    "evolution_params": ["cutoff", "wet", "depth"]
+  },
+
+  "voiceLeading": {
+    "_doc": "Concrete voicings for Eb major jazz chords: ii7=Fm7, V7=Bb7, Imaj7=Ebmaj7, vi7=Cm7",
+    "chords": {
+      "Fm7": {
+        "root": ["F2", "C3", "Eb3", "Ab3", "C4"],
+        "drop2": ["F2", "C3", "Ab3", "C4", "Eb4"],
+        "spread": ["F2", "Eb3", "C4", "Ab4"]
+      },
+      "Bb7": {
+        "root": ["Bb2", "F3", "Ab3", "D4"],
+        "drop2": ["Bb2", "Ab3", "D4", "F4"],
+        "spread": ["Bb1", "Ab3", "D4", "F4"]
+      },
+      "Ebmaj7": {
+        "root": ["Eb2", "Bb2", "D3", "G3", "Bb3"],
+        "drop2": ["Eb2", "Bb2", "G3", "Bb3", "D4"],
+        "spread": ["Eb2", "D3", "Bb3", "G4"]
+      },
+      "Cm7": {
+        "root": ["C2", "G2", "Bb2", "Eb3", "G3"],
+        "drop2": ["C2", "G2", "Eb3", "G3", "Bb3"],
+        "spread": ["C2", "Bb2", "G3", "Eb4"]
+      }
+    },
+    "transitions": {
+      "Fm7_to_Bb7": { "motion": "ii-V: bass descends fourth F->Bb, Eb3->D4 guides to 3rd, Ab3 holds" },
+      "Bb7_to_Ebmaj7": { "motion": "V-I: bass descends fifth Bb->Eb, Ab3->G3 resolves tritone, D4->D3" },
+      "Ebmaj7_to_Cm7": { "motion": "I-vi: bass descends third Eb->C, D3->Eb3, G3 common tone, Bb3->Bb2" },
+      "Cm7_to_Fm7": { "motion": "vi-ii: bass ascends fourth C->F, Eb3->Eb3 common, G3->Ab3, Bb3->C4" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "fadeout",
+      "bars_before": 0.5,
+      "strudel": "s('brown').lpf(sine.range(1000,2500)).gain(perlin.range(0.15,0.25))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 0.5,
+      "strudel": "s('RolandTR606_hh').struct('t*8').hpf(6000).lpf(2500).gain(perlin.range(0.1,0.4))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('Fm7').voicing().s('piano').lpf(perlin.range(1800,1200)).crush(12).room(0.4).gain(perlin.range(0.3,0.5)).slow(2)"
+    }
+  }
+}

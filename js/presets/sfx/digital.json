@@ -1,0 +1,59 @@
+{
+  "family": "digital",
+  "description": "Blip, glitch, byte sound, keystroke. Mid-high spectrum, minimal noise, mechanical precision.",
+  "characteristics": {
+    "attack_ms": [0, 10],
+    "decay_ms": [30, 200],
+    "frequency_range_hz": [1000, 8000]
+  },
+  "sounds": {
+    "element-appear": {
+      "label": "Blip / data tick",
+      "strudel": "note('e6').s('sine').fm(8).fmh(3).gain(0.35)",
+      "duration": 50,
+      "velocity": 0.35
+    },
+    "text-typing": {
+      "label": "Digital keystroke",
+      "strudel": "note('a6').s('sine').fm(12).fmh(5).crush(6).gain(0.15)",
+      "duration": 30,
+      "velocity": 0.15
+    },
+    "number-count": {
+      "label": "Digital counter",
+      "strudel": "note('d6').s('square').crush(8).gain(0.25)",
+      "duration": 50,
+      "velocity": 0.25
+    },
+    "card-flip": {
+      "label": "Synthetic swoosh",
+      "strudel": "s('pink').lpf(sine.range(2000,8000)).hpf(1000).gain(0.3)",
+      "duration": 100,
+      "velocity": 0.3
+    },
+    "scene-transition": {
+      "label": "Synth riser",
+      "strudel": "note('c4').s('sine').fm(4).fmh(2).lpf(sine.range(500,4000)).room(0.3).gain(0.35).slow(2)",
+      "duration": 500,
+      "velocity": 0.35
+    },
+    "cta-final": {
+      "label": "Electronic stinger",
+      "strudel": "note('g5').s('sine').fm(10).fmh(4).room(0.25).gain(0.6)",
+      "duration": 200,
+      "velocity": 0.6
+    },
+    "logo-reveal": {
+      "label": "Subtle laser",
+      "strudel": "note('a5').s('sine').fm(15).fmh(6).room(0.3).gain(0.45)",
+      "duration": 200,
+      "velocity": 0.45
+    },
+    "stat-progress": {
+      "label": "Ascending blip",
+      "strudel": "note('c6').s('sine').fm(6).fmh(3).gain(0.25)",
+      "duration": 50,
+      "velocity": 0.25
+    }
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "style": "world",
+  "description": "Ethnic-flavored soundscape with modal melodies, hand percussion textures, and folk-inspired plucked strings.",
+  "family": "tonal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(s('tabla').struct('t').room(0.25).gain(0.9), note('e3').s('pluck').room(0.35).gain(0.8))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "s('tabla').struct('t ~ t').room(0.2).gain(0.75)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<e4 f4 g4 a4>').s('pluck').room(0.35).gain(0.7)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["tabla_high", "shaker"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["sitar", "tabla"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 105,
+    "range": [90, 120],
+    "swing": 0.2,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "cadential_insert",
+      "cadenceBars": 2,
+      "forceTonicLastBar": true,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "E phrygian",
+
+  "sounds": {
+    "sitar": {
+      "source": "pluck",
+      "room": 0.35,
+      "gain": 0.65
+    },
+    "tabla": {
+      "source": "tabla",
+      "room": 0.2,
+      "gain": 0.7
+    },
+    "shaker": {
+      "source": "white",
+      "hpf": 6000,
+      "room": 0.15,
+      "gain": 0.4
+    },
+    "drone": {
+      "source": "triangle",
+      "lpf": 1200,
+      "room": 0.5,
+      "gain": 0.55
+    },
+    "flute": {
+      "source": "sine",
+      "delay": 0.2,
+      "room": 0.35,
+      "gain": 0.55
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "s('white').struct('t ~ t/2 t ~ t/2 t ~ t/2 t ~ t/2 t ~ t/2 ~').hpf(6000).room(0.15).gain(0.3)",
+      "harmony": "silent",
+      "drone": "note('<e2 b2>').s('triangle').lpf(1200).room(0.5).gain(0.45).slow(8)"
+    },
+    "build": {
+      "rhythm": "stack(s('tabla').struct('t ~ ~ t/2 ~ ~ t ~ ~ t/2 ~ t/2 t ~ ~ t/2').room(0.2).gain(0.65), s('white').struct('t ~ t/2 t ~ t/2 t ~ t/2 t ~ t/2 t ~ t/2 ~').hpf(6000).room(0.15).gain(0.4))",
+      "harmony": "silent",
+      "drone": "note('<e2 b2>').s('triangle').lpf(1200).room(0.5).gain(0.5).slow(8)",
+      "sitar": "note('<e4 f4 g4 a4 g4 f4 e4 ~>').s('pluck').room(0.35).gain(0.55).slow(2)"
+    },
+    "climax": {
+      "rhythm": "stack(s('tabla').struct('t ~ t/2 t ~ t/2 t ~ t/2 t ~ t/2 t t/2 t/2 t').room(0.2).gain(sine.range(0.6,0.85)), s('white').struct('t t/2 t t t/2 t t t/2 t t t/2 t t t/2 t t/2').hpf(6000).room(0.15).gain(0.5))",
+      "harmony": "silent",
+      "drone": "note('<e2 b2>').s('triangle').lpf(1200).room(0.5).gain(0.55).slow(4)",
+      "sitar": "note('<e4 f4 g4 a4 g4 f4 e4 f4> <b4 a4 g4 f4 e4 ~ ~ ~>').s('pluck').room(0.35).gain(0.7)",
+      "flute": "note('<b5 a5 g5 f5 e5 ~ ~ ~>').s('sine').delay(0.2).room(0.35).gain(0.55).slow(2)"
+    },
+    "resolve": {
+      "rhythm": "s('tabla').struct('t ~ ~ t/2 ~ ~ t ~ ~ ~ ~ ~ ~ ~ ~ ~').room(0.2).gain(perlin.range(0.3,0.5)).slow(2)",
+      "harmony": "silent",
+      "drone": "note('e2').s('triangle').lpf(1000).room(0.55).gain(perlin.range(0.3,0.5)).slow(8)",
+      "sitar": "note('e4').s('pluck').room(0.4).gain(perlin.range(0.3,0.5)).slow(4)",
+      "flute": "note('<b5 a5 g5 f5 e5>').s('sine').delay(0.2).room(0.4).gain(perlin.range(0.25,0.4)).slow(4)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "VII", "IV", "i", "v", "VII", "i", "i"],
+    "scale": "phrygian",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "functional_tonal",
+    "functions": {
+      "i": "T",
+      "VII": "D",
+      "IV": "SD",
+      "v": "D"
+    },
+    "cadences": {
+      "primary": "authentic",
+      "reasoning": "VII→i at end of progression = modal authentic cadence (subtonic resolution to tonic)"
+    }
+  },
+
+  "arc": {
+    "intro": { "layers": ["drone", "shaker"], "velocity": 0.25 },
+    "build": { "layers": ["drone", "sitar", "tabla", "shaker"], "velocity": 0.5 },
+    "climax": { "layers": ["drone", "sitar", "flute", "tabla", "shaker"], "velocity": 0.7 },
+    "resolve": { "layers": ["drone", "sitar", "flute"], "velocity": 0.3 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 4 },
+    "climax": { "max_simultaneous_voices": 5 },
+    "resolve": { "max_simultaneous_voices": 3 },
+    "hard_limit": 6,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "periodo_tematico",
+    "phrases": [
+      { "role": "antecedent", "cadence": "half" },
+      { "role": "consequent", "cadence": "authentic" }
+    ],
+    "development": {
+      "climax": "ascending_sequence_by_step",
+      "resolve": "consequent_simplified"
+    }
+  },
+
+  "voiceLeading": {
+    "_key": "E phrygian",
+    "chords": {
+      "i": {
+        "root":   ["E3", "G3", "B3"],
+        "drop2":  ["G2", "E3", "B3"],
+        "spread": ["E2", "B3", "G4"]
+      },
+      "VII": {
+        "root":   ["D3", "F#3", "A3"],
+        "drop2":  ["F#2", "D3", "A3"],
+        "spread": ["D2", "A3", "F#4"]
+      },
+      "IV": {
+        "root":   ["A3", "C4", "E4"],
+        "drop2":  ["C3", "A3", "E4"],
+        "spread": ["A2", "E4", "C5"]
+      },
+      "v": {
+        "root":   ["B3", "D4", "F#4"],
+        "drop2":  ["D3", "B3", "F#4"],
+        "spread": ["B2", "F#4", "D5"]
+      }
+    },
+    "transitions": {
+      "i_to_VII":  { "motion": "E3→D3 (step down), G3→F#3 (step down), B3→A3 (step down)", "parallel_motion_check": "no parallel P5 or P8" },
+      "VII_to_IV": { "motion": "D3→C4 (step down), F#3→E4 (step down), A3→A3 (common)", "parallel_motion_check": "no parallel P5 or P8" },
+      "IV_to_i":   { "motion": "A3→G3 (step down), C4→B3 (step down), E4→E4 (common)", "parallel_motion_check": "no parallel P5 or P8" },
+      "i_to_v":    { "motion": "E3→F#4 (step up), G3→D4 (skip), B3→B3 (common)", "parallel_motion_check": "no parallel P5 or P8" },
+      "v_to_VII":  { "motion": "B3→A3 (step down), D4→D3 (octave), F#4→F#3 (octave)", "parallel_motion_check": "no parallel P5 or P8" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(note('e2').s('triangle').lpf(1200).room(0.5).gain(perlin.range(0.45,0.55)).slow(4), s('tabla').struct('t ~ ~ ~ ~ ~ ~ ~').room(0.2).gain(0.5))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 0.5,
+      "strudel": "stack(s('tabla').struct('t*16').room(0.2).gain(perlin.range(0.3,0.9)), s('white').struct('t*16').hpf(6000).gain(perlin.range(0.3,0.6)))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "stack(note('e4').s('pluck').room(0.4).gain(perlin.range(0.3,0.5)).slow(2), note('<b5 a5 g5 f5 e5>').s('sine').delay(0.2).room(0.4).gain(perlin.range(0.2,0.4)).slow(4))"
+    }
+  }
+}

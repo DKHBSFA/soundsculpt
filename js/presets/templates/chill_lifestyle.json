@@ -1,0 +1,83 @@
+{
+  "template_id": "chill_lifestyle",
+  "display_name": "Chill / Lifestyle",
+  "description": "Relaxed, warm vibes for wellness, travel, coffee brands, and lifestyle content",
+  "use_cases": ["wellness", "travel", "coffee", "fashion", "lifestyle", "vlog"],
+
+  "parameters": {
+    "duration": {
+      "type": "enum",
+      "values": ["30s", "60s"],
+      "default": "30s"
+    },
+    "energy": {
+      "type": "range",
+      "min": 0.2,
+      "max": 0.7,
+      "default": 0.45
+    },
+    "voiceover": {
+      "type": "bool",
+      "default": true
+    }
+  },
+
+  "base_style": "lo-fi",
+
+  "duration_adaptations": {
+    "30s": {
+      "arc_strategy": "compressed",
+      "impact_intensity": 0.6,
+      "bars": 12,
+      "phases": {
+        "impact": [0, 1],
+        "build": [1, 6],
+        "climax": [6, 10],
+        "resolve": [10, 12]
+      }
+    },
+    "60s": {
+      "arc_strategy": "full",
+      "impact_intensity": 0.5,
+      "bars": 24,
+      "phases": {
+        "impact": [0, 1],
+        "intro": [1, 6],
+        "build": [6, 12],
+        "climax": [12, 20],
+        "resolve": [20, 24]
+      }
+    }
+  },
+
+  "energy_scaling": {
+    "affects": ["velocity_multiplier", "density", "filter_brightness"],
+    "formula": {
+      "velocity_multiplier": "0.4 + (energy * 0.4)",
+      "density": "energy < 0.4 ? 'sparse' : 'balanced'",
+      "filter_brightness": "800 + (energy * 1500)"
+    }
+  },
+
+  "voiceover_adaptation": {
+    "if_true": {
+      "apply_mode": "voiceover_bed",
+      "mid_gain_reduction": 0.4
+    }
+  },
+
+  "style_overrides": {
+    "temporal": {
+      "bpm": 78,
+      "swing": 0.6
+    },
+    "key": "Eb major",
+    "sounds": {
+      "piano": {
+        "lpf": 1600,
+        "crush": 12,
+        "gain": 0.55
+      }
+    }
+  }
+}

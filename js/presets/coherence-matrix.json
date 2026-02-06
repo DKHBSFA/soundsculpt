@@ -1,0 +1,288 @@
+{
+  "version": "2.0.0",
+  "last_updated": "2026-02-01",
+  "description": "Master mapping: context → style, mode → style, style → SFX family. V2: feature_profile for algorithmic selection + text2midi prompt templates.",
+
+  "styles": {
+    "corporate": {
+      "bpm": [80, 100], "energy": "low-medium",
+      "contexts": ["SaaS", "B2B", "enterprise", "fintech"],
+      "default_sfx": "clean",
+      "feature_profile": { "arousal": "low", "valence": "bright", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "corporate background music",
+        "energy_descriptors": "calm, professional, steady",
+        "instruments_default": "piano, soft strings, light percussion"
+      }
+    },
+    "cinematic": {
+      "bpm": [60, 90], "energy": "medium-high",
+      "contexts": ["product-launch", "brand-story", "trailer"],
+      "default_sfx": "cinematic",
+      "feature_profile": { "arousal": "medium", "valence": "neutral", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "cinematic score",
+        "energy_descriptors": "sweeping, emotional, building",
+        "instruments_default": "strings, brass, timpani, piano"
+      }
+    },
+    "electronic": {
+      "bpm": [110, 128], "energy": "medium-high",
+      "contexts": ["startup", "tech", "app", "dev-tools"],
+      "default_sfx": "digital",
+      "feature_profile": { "arousal": "high", "valence": "neutral", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "electronic dance music",
+        "energy_descriptors": "energetic, driving, synth-heavy",
+        "instruments_default": "synth lead, synth bass, arpeggiator, kick, hihat"
+      }
+    },
+    "lo-fi": {
+      "bpm": [70, 85], "energy": "low",
+      "contexts": ["lifestyle", "edu", "blog", "podcast"],
+      "default_sfx": "organic",
+      "feature_profile": { "arousal": "low", "valence": "bright", "priority": 2 },
+      "text2midi_prompt": {
+        "genre": "lo-fi hip hop beats",
+        "energy_descriptors": "chill, warm, nostalgic, relaxed",
+        "instruments_default": "electric piano, muted guitar, soft drums, vinyl crackle"
+      }
+    },
+    "ambient": {
+      "bpm": [60, 80], "energy": "very-low",
+      "contexts": ["luxury", "minimal", "portfolio", "wellness"],
+      "default_sfx": "clean",
+      "feature_profile": { "arousal": "low", "valence": "neutral", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "ambient atmospheric",
+        "energy_descriptors": "ethereal, floating, spacious, meditative",
+        "instruments_default": "pad synth, reverb piano, subtle texture"
+      }
+    },
+    "upbeat": {
+      "bpm": [120, 140], "energy": "high",
+      "contexts": ["social-media", "promo", "gaming", "retail"],
+      "default_sfx": "hyper",
+      "feature_profile": { "arousal": "high", "valence": "bright", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "upbeat pop electronic",
+        "energy_descriptors": "happy, bouncy, catchy, high-energy",
+        "instruments_default": "synth lead, pluck, punchy drums, bass, clap"
+      }
+    },
+    "acoustic": {
+      "bpm": [90, 110], "energy": "medium",
+      "contexts": ["nonprofit", "edu", "personal", "craft"],
+      "default_sfx": "organic",
+      "feature_profile": { "arousal": "medium", "valence": "bright", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "acoustic folk",
+        "energy_descriptors": "warm, organic, gentle, human",
+        "instruments_default": "acoustic guitar, piano, light percussion, strings"
+      }
+    },
+    "dramatic": {
+      "bpm": [90, 120], "energy": "high",
+      "contexts": ["explainer-tension", "confronto", "before-after"],
+      "default_sfx": "cinematic",
+      "feature_profile": { "arousal": "high", "valence": "dark", "priority": 5 },
+      "text2midi_prompt": {
+        "genre": "dramatic tension music",
+        "energy_descriptors": "intense, suspenseful, building, powerful",
+        "instruments_default": "low strings, brass stabs, percussion, piano"
+      }
+    },
+    "trap": {
+      "bpm": [130, 160], "energy": "high",
+      "contexts": ["urban", "streetwear", "hype", "sneakers"],
+      "default_sfx": "hyper",
+      "feature_profile": { "arousal": "high", "valence": "dark", "priority": 3 },
+      "text2midi_prompt": {
+        "genre": "trap beat",
+        "energy_descriptors": "hard, bouncy, aggressive, heavy bass",
+        "instruments_default": "808 bass, hi-hat rolls, snare, synth lead"
+      }
+    },
+    "synthwave": {
+      "bpm": [100, 118], "energy": "medium",
+      "contexts": ["retro-tech", "gaming", "nostalgia", "80s"],
+      "default_sfx": "digital",
+      "feature_profile": { "arousal": "medium", "valence": "neutral", "priority": 2 },
+      "text2midi_prompt": {
+        "genre": "synthwave retrowave",
+        "energy_descriptors": "retro, dreamy, neon, pulsing",
+        "instruments_default": "analog synth lead, pad, arpeggiated bass, gated drums"
+      }
+    },
+    "orchestral": {
+      "bpm": [70, 110], "energy": "high",
+      "contexts": ["epic", "trailer", "institutional", "award"],
+      "default_sfx": "cinematic",
+      "feature_profile": { "arousal": "high", "valence": "bright", "priority": 2 },
+      "text2midi_prompt": {
+        "genre": "orchestral epic",
+        "energy_descriptors": "grand, soaring, majestic, powerful",
+        "instruments_default": "full orchestra, strings, brass, timpani, choir"
+      }
+    },
+    "minimal-techno": {
+      "bpm": [120, 130], "energy": "low-medium",
+      "contexts": ["design", "architecture", "arte", "gallery"],
+      "default_sfx": "clean",
+      "feature_profile": { "arousal": "medium", "valence": "neutral", "priority": 3 },
+      "text2midi_prompt": {
+        "genre": "minimal techno",
+        "energy_descriptors": "hypnotic, repetitive, subtle, precise",
+        "instruments_default": "kick, rimshot, hi-hat, filtered synth, subtle bass"
+      }
+    },
+    "jazz": {
+      "bpm": [100, 140], "energy": "medium",
+      "contexts": ["premium", "food", "hospitality", "cocktail"],
+      "default_sfx": "organic",
+      "feature_profile": { "arousal": "medium", "valence": "bright", "priority": 2 },
+      "text2midi_prompt": {
+        "genre": "jazz combo",
+        "energy_descriptors": "smooth, sophisticated, swinging, warm",
+        "instruments_default": "piano, upright bass, brushed drums, saxophone"
+      }
+    },
+    "world": {
+      "bpm": [90, 120], "energy": "medium",
+      "contexts": ["travel", "cultura", "ONG", "documentary"],
+      "default_sfx": "organic",
+      "feature_profile": { "arousal": "medium", "valence": "bright", "priority": 3 },
+      "text2midi_prompt": {
+        "genre": "world music fusion",
+        "energy_descriptors": "earthy, rhythmic, cultural, warm",
+        "instruments_default": "hand drums, acoustic guitar, flute, strings, marimba"
+      }
+    },
+    "glitch": {
+      "bpm": [90, 140], "energy": "medium-high",
+      "contexts": ["sperimentale", "arte-digitale", "crypto", "AI"],
+      "default_sfx": "digital",
+      "feature_profile": { "arousal": "high", "valence": "dark", "priority": 2 },
+      "text2midi_prompt": {
+        "genre": "glitch electronic experimental",
+        "energy_descriptors": "broken, stuttering, chaotic, digital",
+        "instruments_default": "glitch synth, bitcrushed percussion, stutter bass, noise"
+      }
+    },
+    "neo-classical": {
+      "bpm": [60, 80], "energy": "low",
+      "contexts": ["fashion", "beauty", "wellness", "spa"],
+      "default_sfx": "clean",
+      "feature_profile": { "arousal": "low", "valence": "neutral", "priority": 2 },
+      "text2midi_prompt": {
+        "genre": "neo-classical minimalist",
+        "energy_descriptors": "delicate, intimate, sparse, contemplative",
+        "instruments_default": "piano, solo cello, soft strings"
+      }
+    },
+    "dnb": {
+      "bpm": [170, 180], "energy": "very-high",
+      "contexts": ["gaming", "sport", "energia", "extreme"],
+      "default_sfx": "hyper",
+      "feature_profile": { "arousal": "high", "valence": "neutral", "priority": 5 },
+      "text2midi_prompt": {
+        "genre": "drum and bass",
+        "energy_descriptors": "fast, intense, breakbeat, relentless",
+        "instruments_default": "reese bass, breakbeat drums, stab synth, amen break"
+      }
+    },
+    "chillwave": {
+      "bpm": [90, 110], "energy": "low",
+      "contexts": ["lifestyle", "travel", "relax", "sunset"],
+      "default_sfx": "clean",
+      "feature_profile": { "arousal": "low", "valence": "bright", "priority": 3 },
+      "text2midi_prompt": {
+        "genre": "chillwave dream pop",
+        "energy_descriptors": "hazy, warm, washed-out, nostalgic",
+        "instruments_default": "reverb guitar, soft synth pad, slow drums, filtered vocals"
+      }
+    },
+    "industrial": {
+      "bpm": [110, 140], "energy": "high",
+      "contexts": ["manifattura", "automotive", "hard-tech", "machinery"],
+      "default_sfx": "dark",
+      "feature_profile": { "arousal": "high", "valence": "dark", "priority": 4 },
+      "text2midi_prompt": {
+        "genre": "industrial electronic",
+        "energy_descriptors": "mechanical, harsh, distorted, pounding",
+        "instruments_default": "distorted kick, metal percussion, noise synth, heavy bass"
+      }
+    },
+    "horror": {
+      "bpm": [60, 120], "energy": "variable",
+      "contexts": ["teaser", "suspense", "halloween", "thriller"],
+      "default_sfx": "dark",
+      "feature_profile": { "arousal": "medium", "valence": "dark", "priority": 1 },
+      "text2midi_prompt": {
+        "genre": "horror suspense dark ambient",
+        "energy_descriptors": "unsettling, tense, eerie, creeping",
+        "instruments_default": "dissonant strings, sub bass drone, reversed textures, sparse piano"
+      }
+    }
+  },
+
+  "sfx_families": {
+    "clean":     { "description": "Click puliti, chime cristallini, whoosh morbidi", "associated_styles": ["corporate", "neo-classical", "ambient", "minimal-techno", "chillwave"] },
+    "digital":   { "description": "Blip, glitch, byte sound, keystroke", "associated_styles": ["electronic", "synthwave", "glitch", "trap"] },
+    "organic":   { "description": "Percussioni legno, page turn, spring, tap", "associated_styles": ["acoustic", "world", "jazz", "lo-fi"] },
+    "cinematic": { "description": "Impact profondi, riser orchestrali, swell, brass stab", "associated_styles": ["cinematic", "orchestral", "dramatic", "neo-classical"] },
+    "hyper":     { "description": "Impact massivi, laser, stinger aggressivi, reverse cymbal", "associated_styles": ["upbeat", "trap", "dnb", "industrial"] },
+    "dark":      { "description": "Sub-bass rumble, metal scrape, reverse texture, drone burst", "associated_styles": ["horror", "industrial", "glitch", "dramatic"] }
+  },
+
+  "mode_mapping": {
+    "safe": {
+      "soundtrack_styles": ["corporate", "ambient", "acoustic", "neo-classical", "chillwave"],
+      "sfx_family": "clean",
+      "sfx_alt": "organic",
+      "note": "Select based on feature_profile match within these styles"
+    },
+    "chaos": {
+      "soundtrack_styles": ["electronic", "glitch", "industrial", "trap", "dnb"],
+      "sfx_family": "digital",
+      "sfx_alt": ["hyper", "dark"],
+      "note": "Select based on feature_profile match; random SFX element per scene"
+    },
+    "hybrid": {
+      "soundtrack_styles": ["corporate", "cinematic", "synthwave", "acoustic", "minimal-techno"],
+      "sfx_family": "clean",
+      "sfx_surprise": ["cinematic", "hyper"],
+      "note": "Base style from feature_profile + one surprise SFX element per scene"
+    },
+    "cocomelon": {
+      "soundtrack_styles": ["upbeat", "trap", "dnb"],
+      "sfx_family": "hyper",
+      "sfx_density": "maximum",
+      "pattern_interrupt_interval_sec": 3.5,
+      "note": "SFX on every visual event; feature_profile picks among upbeat/trap/dnb"
+    }
+  },
+
+  "visual_events": [
+    "element-appear",
+    "text-typing",
+    "number-count",
+    "card-flip",
+    "scene-transition",
+    "cta-final",
+    "logo-reveal",
+    "stat-progress"
+  ],
+
+  "style_selection_algorithm": {
+    "description": "Deterministic style selection using feature vector from HTML analysis",
+    "steps": [
+      "1. Extract features: animDensity, aggressiveness, scenePace, colorEnergy, transitionIntensity",
+      "2. Derive arousal: high (aggressiveness>0.5 OR animDensity>3 OR scenePace<3), medium (0.2-0.5, 3-5s), low (<0.2, >5s)",
+      "3. Derive valence: dark (colorEnergy=dark AND aggressiveness>0.4), bright (colorEnergy=light OR aggressiveness<0.2), neutral (otherwise)",
+      "4. Filter styles by mode_mapping[mode].soundtrack_styles",
+      "5. Match arousal+valence to style feature_profile",
+      "6. If multiple matches, pick lowest priority number"
+    ]
+  }
+}

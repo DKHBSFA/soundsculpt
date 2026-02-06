@@ -1,0 +1,9 @@
+{
+  "tonal": ["jazz", "orchestral", "neo-classical", "acoustic", "cinematic", "corporate", "upbeat", "world"],
+  "modal": ["ambient", "chillwave", "lo-fi"],
+  "loop": ["dnb", "trap", "minimal-techno", "synthwave", "electronic"],
+  "experimental": ["glitch", "industrial", "dramatic"],
+  "hybrid_family": {
+    "horror": ["modal", "experimental"]
+  }
+}

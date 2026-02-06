@@ -1,0 +1,204 @@
+{
+  "_doc": "Pre-computed voice leading tables for major keys (family: tonal)",
+
+  "keys": {
+    "C_major": {
+      "scale": ["C", "D", "E", "F", "G", "A", "B"],
+      "chords": {
+        "Cmaj7": {
+          "close": ["C3", "E3", "G3", "B3"],
+          "drop2": ["E2", "C3", "G3", "B3"],
+          "spread": ["C2", "G3", "B3", "E4"]
+        },
+        "Dm7": {
+          "close": ["D3", "F3", "A3", "C4"],
+          "drop2": ["F2", "D3", "A3", "C4"],
+          "spread": ["D2", "A3", "C4", "F4"]
+        },
+        "Em7": {
+          "close": ["E3", "G3", "B3", "D4"],
+          "drop2": ["G2", "E3", "B3", "D4"],
+          "spread": ["E2", "B3", "D4", "G4"]
+        },
+        "Fmaj7": {
+          "close": ["F3", "A3", "C4", "E4"],
+          "drop2": ["A2", "F3", "C4", "E4"],
+          "spread": ["F2", "C4", "E4", "A4"]
+        },
+        "G7": {
+          "close": ["G2", "B2", "D3", "F3"],
+          "drop2": ["B1", "G2", "D3", "F3"],
+          "spread": ["G1", "D3", "F3", "B3"]
+        },
+        "Am7": {
+          "close": ["A2", "C3", "E3", "G3"],
+          "drop2": ["C2", "A2", "E3", "G3"],
+          "spread": ["A1", "E3", "G3", "C4"]
+        },
+        "Bm7b5": {
+          "close": ["B2", "D3", "F3", "A3"],
+          "drop2": ["D2", "B2", "F3", "A3"],
+          "spread": ["B1", "F3", "A3", "D4"]
+        }
+      },
+      "progressions": {
+        "I_vi_IV_V": {
+          "name": "Pop standard",
+          "chords": ["Cmaj7", "Am7", "Fmaj7", "G7"],
+          "transitions": [
+            {
+              "from": "Cmaj7",
+              "to": "Am7",
+              "voicing": "drop2_to_drop2",
+              "voice_motion": {
+                "bass": "E2 -> C2 (descending third)",
+                "tenor": "C3 -> A2 (descending third)",
+                "alto": "G3 -> E3 (descending third)",
+                "soprano": "B3 -> G3 (descending third)"
+              },
+              "common_tones": 2,
+              "smoothness_score": 0.85
+            },
+            {
+              "from": "Am7",
+              "to": "Fmaj7",
+              "voicing": "drop2_to_drop2",
+              "voice_motion": {
+                "bass": "C2 -> A2 (ascending sixth)",
+                "tenor": "A2 -> F3 (ascending sixth)",
+                "alto": "E3 -> C4 (ascending sixth)",
+                "soprano": "G3 -> E4 (ascending sixth)"
+              },
+              "common_tones": 2,
+              "smoothness_score": 0.8
+            },
+            {
+              "from": "Fmaj7",
+              "to": "G7",
+              "voicing": "drop2_to_drop2",
+              "voice_motion": {
+                "bass": "A2 -> B1 (step down octave+step)",
+                "tenor": "F3 -> G2 (step up octave down)",
+                "alto": "C4 -> D3 (step up octave down)",
+                "soprano": "E4 -> F3 (step down)"
+              },
+              "common_tones": 0,
+              "smoothness_score": 0.75
+            },
+            {
+              "from": "G7",
+              "to": "Cmaj7",
+              "voicing": "drop2_to_drop2",
+              "voice_motion": {
+                "bass": "B1 -> C2 (leading tone resolution)",
+                "tenor": "G2 -> C3 (leap to root)",
+                "alto": "D3 -> E3 (step up)",
+                "soprano": "F3 -> E3 (7th resolves down)"
+              },
+              "cadence_type": "authentic",
+              "common_tones": 0,
+              "smoothness_score": 0.95
+            }
+          ]
+        },
+        "ii_V_I": {
+          "name": "Jazz turnaround",
+          "chords": ["Dm7", "G7", "Cmaj7"],
+          "transitions": [
+            {
+              "from": "Dm7",
+              "to": "G7",
+              "voicing": "drop2_to_drop2",
+              "voice_motion": {
+                "bass": "F2 -> B1 (tritone sub option) or F2 -> G2",
+                "tenor": "D3 -> D3 (common tone)",
+                "alto": "A3 -> B3 (step up to leading tone)",
+                "soprano": "C4 -> B3 (step down)"
+              },
+              "common_tones": 1,
+              "smoothness_score": 0.85
+            },
+            {
+              "from": "G7",
+              "to": "Cmaj7",
+              "voicing": "drop2_to_drop2",
+              "voice_motion": {
+                "bass": "B1 -> C2 (leading tone up)",
+                "tenor": "G2 -> G2 (common tone) or G2 -> C3",
+                "alto": "D3 -> E3 (step up)",
+                "soprano": "F3 -> E3 (7th resolves down)"
+              },
+              "cadence_type": "authentic",
+              "common_tones": 1,
+              "smoothness_score": 0.95
+            }
+          ]
+        }
+      }
+    },
+
+    "G_major": {
+      "scale": ["G", "A", "B", "C", "D", "E", "F#"],
+      "chords": {
+        "Gmaj7": {
+          "close": ["G3", "B3", "D4", "F#4"],
+          "drop2": ["B2", "G3", "D4", "F#4"],
+          "spread": ["G2", "D4", "F#4", "B4"]
+        },
+        "Am7": {
+          "close": ["A2", "C3", "E3", "G3"],
+          "drop2": ["C2", "A2", "E3", "G3"],
+          "spread": ["A1", "E3", "G3", "C4"]
+        },
+        "Bm7": {
+          "close": ["B2", "D3", "F#3", "A3"],
+          "drop2": ["D2", "B2", "F#3", "A3"],
+          "spread": ["B1", "F#3", "A3", "D4"]
+        },
+        "Cmaj7": {
+          "close": ["C3", "E3", "G3", "B3"],
+          "drop2": ["E2", "C3", "G3", "B3"],
+          "spread": ["C2", "G3", "B3", "E4"]
+        },
+        "D7": {
+          "close": ["D3", "F#3", "A3", "C4"],
+          "drop2": ["F#2", "D3", "A3", "C4"],
+          "spread": ["D2", "A3", "C4", "F#4"]
+        },
+        "Em7": {
+          "close": ["E3", "G3", "B3", "D4"],
+          "drop2": ["G2", "E3", "B3", "D4"],
+          "spread": ["E2", "B3", "D4", "G4"]
+        }
+      },
+      "progressions": {
+        "I_IV_V_I": {
+          "name": "Simple",
+          "chords": ["Gmaj7", "Cmaj7", "D7", "Gmaj7"],
+          "transitions": [
+            {
+              "from": "Gmaj7",
+              "to": "Cmaj7",
+              "voice_motion": {
+                "bass": "B2 -> E2 (descending fifth)",
+                "tenor": "G3 -> C3 (ascending fourth)",
+                "alto": "D4 -> G3 (descending fifth)",
+                "soprano": "F#4 -> B3 (descending fifth)"
+              },
+              "smoothness_score": 0.8
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "rules": {
+    "parallel_fifths": "FORBIDDEN in tonal family",
+    "parallel_octaves": "FORBIDDEN in tonal family",
+    "voice_crossing": "FORBIDDEN",
+    "max_leap": "Octave (prefer stepwise)",
+    "leading_tone": "Must resolve up to tonic",
+    "seventh": "Must resolve down by step"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "family": "clean",
+  "description": "Click puliti, chime cristallini, whoosh morbidi. Fast attack, short decay, consonant harmonic spectrum.",
+  "characteristics": {
+    "attack_ms": [1, 20],
+    "decay_ms": [50, 300],
+    "frequency_range_hz": [800, 6000]
+  },
+  "sounds": {
+    "element-appear": {
+      "label": "Soft click with subtle whoosh",
+      "strudel": "note('c6').s('triangle').room(0.2).gain(0.3)",
+      "duration": 60,
+      "velocity": 0.3
+    },
+    "text-typing": {
+      "label": "Light tick",
+      "strudel": "note('g6').s('square').lpf(4000).gain(0.15)",
+      "duration": 30,
+      "velocity": 0.15
+    },
+    "number-count": {
+      "label": "Discrete tick",
+      "strudel": "note('e6').s('sine').gain(0.25)",
+      "duration": 50,
+      "velocity": 0.25
+    },
+    "card-flip": {
+      "label": "Soft page turn",
+      "strudel": "s('white').lpf(3000).hpf(1500).gain(0.2)",
+      "duration": 100,
+      "velocity": 0.2
+    },
+    "scene-transition": {
+      "label": "Fade pad",
+      "strudel": "note('c5').s('sine').room(0.5).gain(0.25).slow(2)",
+      "duration": 500,
+      "velocity": 0.25
+    },
+    "cta-final": {
+      "label": "Resolving chime",
+      "strudel": "note('g5').s('sine').room(0.4).gain(0.45)",
+      "duration": 300,
+      "velocity": 0.45
+    },
+    "logo-reveal": {
+      "label": "Single piano note",
+      "strudel": "note('c5').s('triangle').room(0.35).gain(0.5).slow(2)",
+      "duration": 500,
+      "velocity": 0.5
+    },
+    "stat-progress": {
+      "label": "Ascending tick",
+      "strudel": "note('c6').s('triangle').gain(0.2)",
+      "duration": 50,
+      "velocity": 0.2
+    }
+  }
+}

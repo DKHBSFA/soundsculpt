@@ -1,0 +1,209 @@
+{
+  "style": "ambient",
+  "description": "Ethereal, slowly evolving soundscapes with long pads, drones, and granular textures for meditative or atmospheric use.",
+  "family": "modal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "chord('Fmaj7').voicing().s('sine').fm(1.5).fmh(0.25).room(0.7).gain(0.75)"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "note('f1').s('sine').fm(0.5).fmh(1.5).lpf(800).room(0.8).gain(0.55)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('c5').s('sine').delay(0.4).room(0.8).gain(0.45)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["drone"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["shimmer", "texture"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["pad"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 1
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 68,
+    "range": [60, 80],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "fade_out",
+      "cadenceBars": 2,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "F lydian",
+
+  "sounds": {
+    "pad": {
+      "source": "sine",
+      "fm": 1.5,
+      "fmh": 0.25,
+      "room": 0.7,
+      "gain": 0.4
+    },
+    "drone": {
+      "source": "sine",
+      "fm": 0.5,
+      "fmh": 1.5,
+      "lpf": 800,
+      "room": 0.8,
+      "gain": 0.6
+    },
+    "texture": {
+      "source": "pink",
+      "lpf": "sine.range(200,800).slow(16)",
+      "delay": 0.35,
+      "room": 0.7,
+      "gain": 0.25
+    },
+    "shimmer": {
+      "source": "sine",
+      "delay": 0.4,
+      "room": 0.8,
+      "gain": 0.35
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "silent",
+      "drone": "note('f1').s('sine').fm(0.5).fmh(1.5).lpf(800).room(0.8).gain(0.5).slow(8)"
+    },
+    "build": {
+      "rhythm": "s('pink').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ t/2 ~ ~ ~').lpf(sine.range(200,600).slow(16)).room(0.7).gain(0.2)",
+      "harmony": "chord('<Fmaj7 G Fmaj7 Em>').voicing().s('sine').fm(1.5).fmh(0.25).room(0.7).gain(0.35).slow(16)",
+      "drone": "note('<f1 g1 f1 e1>').s('sine').fm(0.5).fmh(1.5).lpf(800).room(0.8).gain(0.55).slow(16)"
+    },
+    "climax": {
+      "rhythm": "silent",
+      "harmony": "chord('<Fmaj7 G Fmaj7 Em>').voicing().s('sine').fm(1.5).fmh(0.25).room(0.7).gain(0.45).slow(16)",
+      "drone": "note('<f1 g1 f1 e1>').s('sine').fm(0.5).fmh(1.5).lpf(1000).room(0.8).gain(0.6).slow(16)",
+      "texture": "s('pink').lpf(sine.range(300,1200).slow(8)).delay(0.35).room(0.7).gain(0.25)",
+      "shimmer": "note('<a5 c6 ~ e5 ~ f5 ~ ~> <b5 ~ g5 ~ a5 ~ ~ ~>').s('sine').delay(0.4).room(0.8).gain(0.3).slow(4)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "chord('<Fmaj7>').voicing().s('sine').fm(1.5).fmh(0.25).room(0.75).gain(perlin.range(0.15,0.3)).slow(8)",
+      "drone": "note('f1').s('sine').fm(0.5).fmh(1.5).lpf(600).room(0.8).gain(perlin.range(0.3,0.5)).slow(8)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["Imaj7", "II", "Imaj7", "vii"],
+    "scale": "lydian",
+    "bars_per_chord": 4
+  },
+
+  "harmonic_system": {
+    "type": "modal_static",
+    "field": "Lydian on F",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["drone"], "velocity": 0.25 },
+    "build": { "layers": ["drone", "pad", "texture"], "velocity": 0.35 },
+    "climax": { "layers": ["drone", "pad", "texture", "shimmer"], "velocity": 0.45 },
+    "resolve": { "layers": ["drone", "pad"], "velocity": 0.2 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 1 },
+    "build": { "max_simultaneous_voices": 3 },
+    "climax": { "max_simultaneous_voices": 4 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 4,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "processuale",
+    "evolution_params": ["cutoff", "wet", "depth"]
+  },
+
+  "voiceLeading": {
+    "_doc": "Concrete voicings for F lydian: Imaj7=Fmaj7, II=G, vii=Em. Lydian #4 = B natural.",
+    "chords": {
+      "Fmaj7": {
+        "root": ["F2", "C3", "E3", "A3", "C4"],
+        "drop2": ["F2", "C3", "A3", "C4", "E4"],
+        "spread": ["F2", "E3", "C4", "A4"]
+      },
+      "G": {
+        "root": ["G2", "D3", "G3", "B3", "D4"],
+        "drop2": ["G2", "D3", "B3", "D4", "G4"],
+        "spread": ["G2", "G3", "D4", "B4"]
+      },
+      "Em": {
+        "root": ["E2", "B2", "E3", "G3", "B3"],
+        "drop2": ["E2", "B2", "G3", "B3", "E4"],
+        "spread": ["E2", "E3", "B3", "G4"]
+      }
+    },
+    "transitions": {
+      "Fmaj7_to_G": { "motion": "bass ascends whole step F->G, E3->D3, A3->B3 - lydian brightness" },
+      "G_to_Fmaj7": { "motion": "bass descends whole step G->F, B3->A3, D3->E3 - return to tonic" },
+      "Fmaj7_to_Em": { "motion": "bass descends half step F->E, C3->B2, A3->G3 - modal descent" },
+      "Em_to_Fmaj7": { "motion": "bass ascends half step E->F, G3->A3, B3->C4 - gentle resolution" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "note('f1').s('sine').fm(0.5).room(0.85).gain(perlin.range(0.5,0.7)).slow(4)"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "chord('Fmaj7').voicing().s('sine').fm(1.5).room(0.75).lpf(sine.range(800,2500)).gain(perlin.range(0.3,0.5)).slow(4)"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "note('f1 c2').s('sine').fm(0.3).room(0.8).gain(perlin.range(0.2,0.4)).slow(4)"
+    }
+  }
+}

@@ -1,0 +1,229 @@
+{
+  "style": "trap",
+  "description": "Hard-hitting 808 bass, rapid hi-hat rolls, dark atmospheric pads, and aggressive minimalism for modern urban production.",
+  "family": "loop",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(s('RolandTR808_bd').struct('t').gain(1.0).room(0.2), note('f#1').s('sine').lpf(200).gain(0.95))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "s('white').lpf(sine.range(200,6000)).gain(0.5)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "s('RolandTR808_hh').struct('t t/2 t t/2 t t/2 t t/2').gain(0.7)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["808_bass", "kick"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["hihat", "open_hat"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["lead", "clap"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 140,
+    "range": [130, 160],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "hard_cut",
+      "cadenceBars": 0,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "F# minor",
+
+  "sounds": {
+    "808_bass": {
+      "source": "sine",
+      "lpf": 200,
+      "gain": 0.9
+    },
+    "dark_pad": {
+      "source": "sine",
+      "fm": 4,
+      "fmh": 0.5,
+      "lpf": 1500,
+      "room": 0.5,
+      "gain": 0.5
+    },
+    "lead": {
+      "source": "square",
+      "lpf": 2500,
+      "delay": 0.2,
+      "room": 0.25,
+      "gain": 0.6
+    },
+    "kick": {
+      "source": "bd",
+      "bank": "RolandTR808",
+      "gain": 0.85
+    },
+    "hihat": {
+      "source": "hh",
+      "bank": "RolandTR808",
+      "hpf": 10000,
+      "gain": 0.7
+    },
+    "open_hat": {
+      "source": "oh",
+      "bank": "RolandTR808",
+      "hpf": 8000,
+      "room": 0.2,
+      "gain": 0.55
+    },
+    "clap": {
+      "source": "cp",
+      "bank": "RolandTR808",
+      "room": 0.35,
+      "gain": 0.65
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "s('RolandTR808_hh').struct('t ~ t/2 ~ t ~ t/2 ~ t ~ t/2 ~ t ~ t/2 ~').gain(0.35)",
+      "harmony": "chord('<F#m D E C#m>').voicing().s('sine').fm(4).fmh(0.5).lpf(1500).room(0.5).gain(0.4).slow(8)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "stack(s('RolandTR808_bd').struct('t ~ ~ ~ ~ ~ ~ t/2 ~ ~ t ~ ~ ~ ~ ~'), s('RolandTR808_cp').struct('~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~'), s('RolandTR808_hh').struct('t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2').gain(perlin.range(0.3,0.6)))",
+      "harmony": "chord('<F#m D E C#m>').voicing().s('sine').fm(4).fmh(0.5).lpf(1500).room(0.5).gain(0.5).slow(8)",
+      "bass": "note('<f#1 ~ ~ ~ ~ ~ ~ f#1/2 ~ ~ f#1 ~ ~ ~ ~ ~>').s('sine').lpf(200).gain(0.8)"
+    },
+    "climax": {
+      "rhythm": "stack(s('RolandTR808_bd').struct('t ~ ~ ~ ~ ~ t/2 ~ ~ ~ t ~ ~ ~ t/2 ~'), s('RolandTR808_cp').struct('~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~').gain(0.9), s('RolandTR808_hh').struct('t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2 t t/2').gain(perlin.range(0.5,0.9)), s('RolandTR808_oh').struct('~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ t/2 ~').gain(0.6))",
+      "harmony": "chord('<F#m D E C#m>').voicing().s('sine').fm(4).fmh(0.5).lpf(1800).room(0.5).gain(0.55).slow(8)",
+      "bass": "note('<f#1 ~ ~ ~ ~ ~ f#1/2 ~ ~ ~ f#1 ~ ~ ~ f#1/2 ~>').s('sine').lpf(250).gain(0.9)",
+      "lead": "note('<~ ~ ~ ~ ~ ~ ~ ~ c#5 ~ ~ a4 ~ g#4 ~ ~> <~ ~ ~ ~ ~ ~ ~ ~ e5 ~ c#5 ~ b4 ~ a4 ~ ~ g#4 ~ f#4 ~ ~ ~>').s('square').lpf(2500).delay(0.2).room(0.25).gain(0.6)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "chord('<F#m>').voicing().s('sine').fm(4).fmh(0.5).lpf(1200).room(0.6).gain(perlin.range(0.25,0.4)).slow(4)",
+      "bass": "note('f#1').s('sine').lpf(150).gain(perlin.range(0.4,0.6)).slow(4)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "bVI", "bVII", "v"],
+    "scale": "natural_minor",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "timbral_vector",
+    "field": "F# minor",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["dark_pad", "hihat"], "velocity": 0.4 },
+    "build": { "layers": ["dark_pad", "808_bass", "kick", "hihat", "clap"], "velocity": 0.7 },
+    "climax": { "layers": ["dark_pad", "808_bass", "kick", "hihat", "open_hat", "clap", "lead"], "velocity": 0.9 },
+    "resolve": { "layers": ["dark_pad", "808_bass"], "velocity": 0.35 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 5 },
+    "climax": { "max_simultaneous_voices": 7 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 7,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "drop_structure",
+    "tension_point": "build_to_climax",
+    "release": "rhythmic"
+  },
+
+  "voiceLeading": {
+    "chords": {
+      "i": {
+        "root": ["F#2", "C#3", "F#3", "A3", "C#4"],
+        "drop2": ["F#2", "A2", "C#3", "F#3", "C#4"],
+        "spread": ["F#2", "C#3", "A3", "F#4", "C#5"]
+      },
+      "bVI": {
+        "root": ["D2", "A2", "D3", "F#3", "A3"],
+        "drop2": ["D2", "F#2", "A2", "D3", "A3"],
+        "spread": ["D2", "A2", "F#3", "D4", "A4"]
+      },
+      "bVII": {
+        "root": ["E2", "B2", "E3", "G#3", "B3"],
+        "drop2": ["E2", "G#2", "B2", "E3", "B3"],
+        "spread": ["E2", "B2", "G#3", "E4", "B4"]
+      },
+      "v": {
+        "root": ["C#2", "G#2", "C#3", "E3", "G#3"],
+        "drop2": ["C#2", "E2", "G#2", "C#3", "G#3"],
+        "spread": ["C#2", "G#2", "E3", "C#4", "G#4"]
+      }
+    },
+    "transitions": {
+      "i_to_bVI": { "motion": "descending thirds, A3->F#3 holds, C#4->A3" },
+      "bVI_to_bVII": { "motion": "stepwise ascending, D->E root, F#3->G#3" },
+      "bVII_to_v": { "motion": "descending fourth, E->C#, G#3->G#3 holds" },
+      "v_to_i": { "motion": "ascending fourth, C#->F#, E3->F#3 resolution" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(s('white').gain(perlin.range(0.1,0.5)).lpf(sine.range(200,8000)), note('f#1').s('sine').gain(perlin.range(0.2,0.7)).slow(2))"
+    },
+    "build_to_climax": {
+      "type": "drop",
+      "bars_before": 0.5,
+      "strudel": "s('white').gain(perlin.range(0.5,0.1)).lpf(perlin.range(8000,200))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('F#m').voicing().s('sine').fm(4).room(0.7).gain(perlin.range(0.3,0.5)).slow(2)"
+    }
+  }
+}

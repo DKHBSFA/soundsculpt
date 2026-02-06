@@ -1,0 +1,232 @@
+{
+  "style": "chillwave",
+  "description": "Dreamy lo-fi synths with deep reverb washes, soft pulsing rhythms, and hazy suspended chord voicings.",
+  "family": "modal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "chord('Dmaj7').voicing().s('sine').fm(0.4).fmh(3.5).room(0.6).gain(0.8)"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "chord('Dmaj7').voicing().s('triangle').fm(0.3).room(0.65).gain(0.5)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<d4 f#4 a4>').s('sine').delay(0.35).room(0.6).gain(0.55)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["shimmer_pad", "hihat"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["vocoder_pad"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 1
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 98,
+    "range": [90, 110],
+    "swing": 0.1,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "loop_and_fade",
+      "cadenceBars": 2,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "D",
+
+  "sounds": {
+    "shimmer_pad": {
+      "source": "sine",
+      "fm": 0.4,
+      "fmh": 3.5,
+      "room": 0.6,
+      "gain": 0.4
+    },
+    "vocoder_pad": {
+      "source": "triangle",
+      "fm": 0.3,
+      "fmh": 1.5,
+      "lpf": "sine.range(300,1200).slow(16)",
+      "delay": 0.25,
+      "room": 0.55,
+      "gain": 0.5
+    },
+    "bass": {
+      "source": "triangle",
+      "lpf": 400,
+      "room": 0.2,
+      "gain": 0.65
+    },
+    "kick": {
+      "source": "bd",
+      "bank": "RolandTR606",
+      "room": 0.1,
+      "gain": 0.55
+    },
+    "hat": {
+      "source": "pink",
+      "hpf": 7000,
+      "room": 0.3,
+      "gain": 0.3
+    },
+    "arp": {
+      "source": "pluck",
+      "delay": 0.4,
+      "room": 0.45,
+      "gain": 0.45
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "s('pink').struct('~ ~ t ~ ~ ~ t ~ ~ ~ t ~ ~ ~ t ~').hpf(7000).room(0.3).gain(0.2)",
+      "harmony": "chord('<D Gsus2 Bm Asus4>').voicing().s('sine').fm(0.4).fmh(3.5).room(0.6).gain(0.3).slow(16)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "stack(s('RolandTR606_bd').struct('t ~ ~ ~ t/2 ~ ~ ~ t ~ ~ ~ t/2 ~ ~ ~').gain(0.55), s('pink').struct('~ ~ t ~ ~ ~ t ~ ~ ~ t ~ ~ ~ t ~').hpf(7000).room(0.3).gain(0.25))",
+      "harmony": "stack(chord('<D Gsus2 Bm Asus4>').voicing().s('sine').fm(0.4).fmh(3.5).room(0.6).gain(0.35).slow(16), chord('<D Gsus2 Bm Asus4>').voicing().s('triangle').fm(0.3).fmh(1.5).lpf(sine.range(300,900).slow(16)).delay(0.25).room(0.55).gain(0.35).slow(16))",
+      "bass": "note('<d1 ~ ~ ~ ~ ~ d1/2 ~ ~ ~ d1 ~ ~ ~ d1/2 ~>').s('triangle').lpf(400).room(0.2).gain(0.55)"
+    },
+    "climax": {
+      "rhythm": "stack(s('RolandTR606_bd').struct('t ~ ~ ~ t/2 ~ ~ ~ t ~ ~ ~ t/2 ~ ~ ~').gain(0.6), s('pink').struct('~ ~ t t/2 ~ ~ t t/2 ~ ~ t t/2 ~ ~ t t/2').hpf(7000).room(0.3).gain(0.3))",
+      "harmony": "stack(chord('<D Gsus2 Bm Asus4 D Gsus2 F#m Asus4>').voicing().s('sine').fm(0.4).fmh(3.5).room(0.6).gain(0.45).slow(16), chord('<D Gsus2 Bm Asus4 D Gsus2 F#m Asus4>').voicing().s('triangle').fm(0.3).fmh(1.5).lpf(sine.range(400,1200).slow(8)).delay(0.25).room(0.55).gain(0.4).slow(16))",
+      "bass": "note('<d1 ~ ~ d1/2 ~ ~ d1/2 ~ d1 ~ ~ d1/2 ~ ~ d1/2 ~>').s('triangle').lpf(450).room(0.2).gain(0.6)",
+      "arp": "note('<d5 ~ ~ a4 ~ f#5 ~ ~ d5 ~ ~ a4 ~ f#5 ~ ~>(5,16)').s('pluck').delay(0.4).room(0.45).gain(0.4)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "chord('<D>').voicing().s('sine').fm(0.4).fmh(3.5).room(0.7).gain(perlin.range(0.15,0.3)).slow(8)",
+      "arp": "note('<d5 ~ ~ a4 ~ ~ ~ ~ d5 ~ ~ a4 ~ ~ ~ ~>(3,16)').s('pluck').delay(0.5).room(0.55).gain(perlin.range(0.2,0.35))"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["I", "IVsus2", "vi", "Vsus4", "I", "IVsus2", "iii", "Vsus4"],
+    "scale": "lydian",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "modal_static",
+    "field": "Lydian on D",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["shimmer_pad", "hat"], "velocity": 0.2 },
+    "build": { "layers": ["shimmer_pad", "vocoder_pad", "bass", "kick", "hat"], "velocity": 0.4 },
+    "climax": { "layers": ["shimmer_pad", "vocoder_pad", "bass", "kick", "hat", "arp"], "velocity": 0.55 },
+    "resolve": { "layers": ["shimmer_pad", "arp"], "velocity": 0.2 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 5 },
+    "climax": { "max_simultaneous_voices": 6 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 4,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "processuale",
+    "evolution_params": ["cutoff", "wet", "depth"]
+  },
+
+  "voiceLeading": {
+    "_doc": "Key: D lydian. I=D, IVsus2=Gsus2, vi=Bm, Vsus4=Asus4, iii=F#m",
+    "chords": {
+      "I": {
+        "root": ["D4", "F#4", "A4", "D5"],
+        "drop2": ["D3", "A3", "D4", "F#4"],
+        "spread": ["D3", "A4", "F#5"]
+      },
+      "IVsus2": {
+        "root": ["G3", "A3", "D4", "G4"],
+        "drop2": ["G3", "D4", "G4", "A4"],
+        "spread": ["G3", "D5", "A5"]
+      },
+      "vi": {
+        "root": ["B3", "D4", "F#4", "B4"],
+        "drop2": ["B3", "F#4", "B4", "D5"],
+        "spread": ["B3", "F#5", "D6"]
+      },
+      "Vsus4": {
+        "root": ["A3", "D4", "E4", "A4"],
+        "drop2": ["A3", "E4", "A4", "D5"],
+        "spread": ["A3", "E5", "D6"]
+      },
+      "iii": {
+        "root": ["F#3", "A3", "C#4", "F#4"],
+        "drop2": ["F#3", "C#4", "F#4", "A4"],
+        "spread": ["F#3", "C#5", "A5"]
+      }
+    },
+    "transitions": {
+      "I_to_IVsus2": { "motion": "F#->G (half-step up), A stays as sus2, D stays" },
+      "IVsus2_to_vi": { "motion": "G->F# (half-step down), A->B (step up), D stays" },
+      "vi_to_Vsus4": { "motion": "B->A (step down), D stays as sus4, F#->E (step down)" },
+      "Vsus4_to_I": { "motion": "A->A (pedal), D stays, E->F# (step up)" },
+      "IVsus2_to_iii": { "motion": "G->F# (half-step down), A stays, D->C# (half-step down)" },
+      "iii_to_Vsus4": { "motion": "F#->E (step down), A stays, C#->D (half-step up)" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 0.5,
+      "strudel": "note('d1').s('triangle').lpf(sine.range(100,400)).room(0.2).gain(perlin.range(0.2,0.5))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "s('white').lpf(sine.range(200,8000)).room(0.5).gain(perlin.range(0.1,0.35))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('D').voicing().s('sine').fm(0.4).room(0.75).delay(0.4).gain(perlin.range(0.15,0.3)).slow(2)"
+    }
+  }
+}

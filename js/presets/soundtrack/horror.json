@@ -1,0 +1,240 @@
+{
+  "style": "horror",
+  "description": "Unsettling dissonant drones with sudden transients, chromatic clusters, and eerie spectral textures.",
+  "family": "hybrid",
+  "hybrid_families": ["modal", "experimental"],
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(note('db1').s('sawtooth').fm(1.01).lpf(400).room(0.6).gain(0.9), s('white').struct('t').crush(6).lpf(2000).gain(0.7))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "chord('Dbm').voicing().s('sawtooth').fm(1.01).fmh(3).lpf(800).room(0.6).gain(0.6)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<db4 d4 db4 c4>').s('sine').delay(0.4).room(0.7).gain(0.55)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["drone", "sub_bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["eerie_texture", "whisper"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["stinger", "cluster"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 1
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 80,
+    "range": [40, 120],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "fade_out",
+      "cadenceBars": 2,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "Db",
+
+  "sounds": {
+    "drone": {
+      "source": "sawtooth",
+      "fm": 1.01,
+      "fmh": 3,
+      "lpf": 800,
+      "room": 0.6,
+      "gain": 0.6
+    },
+    "cluster": {
+      "source": "sine",
+      "fm": 7.07,
+      "fmh": 12,
+      "room": 0.55,
+      "gain": 0.5
+    },
+    "stinger": {
+      "source": "metal",
+      "room": 0.5,
+      "gain": 0.7
+    },
+    "breath": {
+      "source": "brown",
+      "lpf": "sine.range(100,500).slow(16)",
+      "room": 0.6,
+      "gain": 0.35
+    },
+    "heartbeat": {
+      "source": "sine",
+      "lpf": 200,
+      "room": 0.3,
+      "gain": 0.6
+    },
+    "whisper": {
+      "source": "sine",
+      "delay": 0.45,
+      "room": 0.6,
+      "gain": 0.4
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "silent",
+      "drone": "note('db1').s('sawtooth').fm(1.01).fmh(3).lpf(800).room(0.6).gain(0.2).slow(8)",
+      "breath": "s('brown').struct('~ ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~').lpf(sine.range(100,400).slow(16)).room(0.6).gain(0.15)"
+    },
+    "build": {
+      "rhythm": "silent",
+      "harmony": "silent",
+      "drone": "note('db1').s('sawtooth').fm(1.01).fmh(3).lpf(900).room(0.6).gain(0.35).slow(8)",
+      "breath": "s('brown').struct('~ ~ ~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~ t ~').lpf(sine.range(100,500).slow(16)).room(0.6).gain(0.2)",
+      "heartbeat": "note('db1').s('sine').struct('t ~ ~ t/2 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~').lpf(200).room(0.3).gain(0.4).slow(2)",
+      "whisper": "note('<db5 d5 db5 ab4>').struct('~ ~ ~ ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~ ~ ~').s('sine').delay(0.45).room(0.6).gain(0.25).slow(4)"
+    },
+    "climax": {
+      "rhythm": "s('metal').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~').room(0.5).gain(0.8)",
+      "harmony": "silent",
+      "drone": "note('<db1 d1>').s('sawtooth').fm(1.01).fmh(5).lpf(1200).room(0.6).gain(0.7).slow(4)",
+      "cluster": "chord('<Db4/D4/Eb4/E4>').s('sine').fm(7.07).fmh(12).struct('~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ t ~ ~ ~ ~').room(0.55).gain(0.5)",
+      "breath": "s('brown').struct('~ ~ t ~ ~ ~ ~ t ~ ~ ~ ~ t ~ ~ ~').lpf(sine.range(150,600).slow(8)).room(0.6).gain(0.3)",
+      "heartbeat": "note('db1').s('sine').struct('t ~ ~ t/2 ~ ~ ~ ~ t ~ ~ t/2 ~ ~ ~ ~').lpf(200).room(0.3).gain(sine.range(0.45,0.6))",
+      "whisper": "note('<db5 d5 e5 f5 gb5 g5 ab5>').struct('~ ~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~ ~ t ~').s('sine').delay(0.45).room(0.6).gain(0.35).slow(2)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "silent",
+      "drone": "note('db1').s('sawtooth').fm(1.01).fmh(3).lpf(400).room(0.6).gain(perlin.range(0.1,0.2)).slow(8)",
+      "breath": "s('brown').struct('~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~').lpf(sine.range(80,300).slow(16)).room(0.6).gain(0.1).slow(2)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "bII", "i", "bVII", "bVI", "bII", "v", "i"],
+    "scale": "chromatic",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "atonal_cluster",
+    "field": "Db chromatic",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["drone", "breath"], "velocity": 0.2 },
+    "build": { "layers": ["drone", "breath", "heartbeat", "whisper"], "velocity": 0.4 },
+    "climax": { "layers": ["drone", "cluster", "stinger", "breath", "heartbeat", "whisper"], "velocity": 0.85 },
+    "resolve": { "layers": ["drone", "breath"], "velocity": 0.15 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 4 },
+    "climax": { "max_simultaneous_voices": 6 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 8,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "atematico",
+    "density_per_phase": { "intro": 0.1, "build": 0.4, "climax": 0.9, "resolve": 0.1 }
+  },
+
+  "voiceLeading": {
+    "_doc": "Key: Db chromatic. i=Dbm, bII=D(maj), bVII=B(maj), bVI=A(maj), v=Abm. Dissonant voicings with minor 2nds and tritones.",
+    "chords": {
+      "i": {
+        "root":   ["Db4", "E4", "Ab4", "Db5"],
+        "drop2":  ["Db3", "Ab3", "Db4", "E4"],
+        "spread": ["Db3", "Ab4", "E5"]
+      },
+      "bII": {
+        "root":   ["D3", "F#3", "A3", "D4"],
+        "drop2":  ["D3", "A3", "D4", "F#4"],
+        "spread": ["D3", "A4", "Eb5"]
+      },
+      "bVII": {
+        "root":   ["B3", "D#4", "F#4", "B4"],
+        "drop2":  ["B3", "F#4", "B4", "D#5"],
+        "spread": ["B3", "F#5", "C6"]
+      },
+      "bVI": {
+        "root":   ["A3", "C#4", "E4", "A4"],
+        "drop2":  ["A3", "E4", "A4", "C#5"],
+        "spread": ["A3", "Eb5", "Bb5"]
+      },
+      "v": {
+        "root":   ["Ab3", "B3", "Eb4", "Ab4"],
+        "drop2":  ["Ab3", "Eb4", "Ab4", "B4"],
+        "spread": ["Ab3", "Eb5", "B5"]
+      }
+    },
+    "transitions": {
+      "i_to_bII":   { "motion": "Db→D (chromatic up), E→F# (step up), Ab→A (chromatic up) — tritone tension Db against D" },
+      "bII_to_i":   { "motion": "D→Db (chromatic down), F#→E (step down), A→Ab (chromatic down)" },
+      "i_to_bVII":  { "motion": "Db→B (minor 2nd down enharmonic), E→D# (chromatic down), Ab→F# (minor 3rd down)" },
+      "bVII_to_bVI":{ "motion": "B→A (step down), D#→C# (step down), F#→E (step down)" },
+      "bVI_to_bII": { "motion": "A→A (pedal), C#→D (chromatic up), E→F# (step up) — tritone A against Eb in spread" },
+      "bII_to_v":   { "motion": "D→Eb (chromatic up), F#→Ab (minor 3rd up), A→Ab (chromatic down)" },
+      "v_to_i":     { "motion": "Ab stays, B→Db (minor 3rd up), Eb→E (chromatic up)" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(note('db1').s('sawtooth').fm(1.01).lpf(sine.range(800,1200)).room(0.6).gain(perlin.range(0.2,0.35)).slow(4), note('db1').s('sine').lpf(200).gain(0.3))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(note('db1').s('sawtooth').fm(perlin.range(3,8)).room(0.6).gain(perlin.range(0.4,0.7)).slow(2), s('metal').struct('~ ~ ~ ~ ~ ~ ~ t').room(0.5).gain(0.9))"
+    },
+    "climax_to_resolve": {
+      "type": "drop",
+      "bars_before": 0.5,
+      "strudel": "note('db1').s('sawtooth').fm(1.01).lpf(400).room(0.6).gain(perlin.range(0.1,0.2)).slow(4)"
+    }
+  }
+}

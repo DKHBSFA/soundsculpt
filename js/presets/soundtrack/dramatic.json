@@ -1,0 +1,222 @@
+{
+  "style": "dramatic",
+  "description": "Intense orchestral tension with staccato strings, thunderous timpani, and brass stabs for high-stakes moments.",
+  "family": "experimental",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(note('c2').s('timpani').room(0.4).gain(1.0), chord('Cm').voicing().s('sawtooth').lpf(3000).room(0.35).gain(0.85))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "chord('Cm').voicing().s('sawtooth').fm(1).fmh(1.5).room(0.4).gain(0.75)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<g4 eb4 c4 g3>').s('sawtooth').lpf(3500).room(0.35).gain(0.7)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["timpani", "sub_bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["strings_high", "shimmer"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["brass_stabs", "staccato_strings"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 105,
+    "range": [90, 120],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "hard_cut",
+      "cadenceBars": 0,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "C minor",
+
+  "sounds": {
+    "staccato_strings": {
+      "source": "sawtooth",
+      "lpf": 3000,
+      "room": 0.35,
+      "gain": 0.65
+    },
+    "brass": {
+      "source": "sawtooth",
+      "fm": 1,
+      "fmh": 8,
+      "room": 0.35,
+      "gain": 0.7
+    },
+    "timpani": {
+      "source": "timpani",
+      "room": 0.45,
+      "gain": 0.85
+    },
+    "pad": {
+      "source": "sine",
+      "fm": 0.5,
+      "fmh": 3,
+      "room": 0.5,
+      "gain": 0.55
+    },
+    "bass": {
+      "source": "sawtooth",
+      "lpf": 200,
+      "gain": 0.8
+    },
+    "cymbal": {
+      "source": "metal",
+      "room": 0.5,
+      "gain": 0.6
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "chord('<Cm>').voicing().s('sine').fm(0.5).fmh(3).room(0.5).gain(0.35).slow(8)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "s('timpani').struct('t ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~').room(0.45).gain(0.75)",
+      "harmony": "chord('<Cm Fm Ab G>').voicing().s('sine').fm(0.5).fmh(3).room(0.5).gain(0.6).slow(8)",
+      "strings": "note('<c4 ~ eb4 ~ c4 ~ eb4 ~ c4 ~ eb4 ~ c4 ~ eb4 ~>').s('sawtooth').lpf(3000).room(0.35).gain(0.6)",
+      "bass": "note('<c2 ~ ~ ~ ~ ~ ~ ~ c2 ~ ~ ~ ~ ~ ~ ~>').s('sawtooth').lpf(200).gain(0.7)"
+    },
+    "climax": {
+      "rhythm": "stack(s('timpani').struct('t ~ ~ eb2 ~ ~ eb2 ~ t eb2 ~ eb2 t ~ ~ eb2').room(0.45).gain(sine.range(0.7,1.0)), s('metal').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~').room(0.5).gain(0.6))",
+      "harmony": "chord('<Cm Fm Ab G>').voicing().s('sine').fm(0.5).fmh(3).room(0.5).gain(0.8).slow(4)",
+      "strings": "note('<c4 eb4 c4 eb4 c4 eb4 c4 eb4 c4 eb4 c4 eb4 c4 eb4 c4 eb4>').s('sawtooth').lpf(3500).room(0.35).gain(sine.range(0.7,0.9))",
+      "brass": "note('<c5 ~ ~ ~ ~ ~ ~ ~ eb5 ~ ~ ~ g5 ~ ~ ~>').s('sawtooth').fm(1).fmh(8).room(0.35).gain(0.85).slow(2)",
+      "bass": "note('<c2 ~ ~ c2 c2 ~ ~ c2 c2 ~ ~ c2 c2 ~ ~ c2>').s('sawtooth').lpf(250).gain(0.85)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "chord('<Cm>').voicing().s('sine').fm(0.5).fmh(3).room(0.55).gain(perlin.range(0.25,0.4)).slow(4)",
+      "strings": "note('<c4 ~ ~ ~ ~ ~ ~ ~ eb4 ~ ~ ~ ~ ~ ~ ~>').s('sawtooth').lpf(2000).room(0.4).gain(perlin.range(0.2,0.35)).slow(2)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "iv", "bVI", "V"],
+    "scale": "harmonic_minor",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "atonal_cluster",
+    "field": "C minor",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["pad"], "velocity": 0.35 },
+    "build": { "layers": ["pad", "staccato_strings", "bass", "timpani"], "velocity": 0.7 },
+    "climax": { "layers": ["pad", "staccato_strings", "brass", "bass", "timpani", "cymbal"], "velocity": 0.95 },
+    "resolve": { "layers": ["pad", "staccato_strings"], "velocity": 0.4 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 1 },
+    "build": { "max_simultaneous_voices": 4 },
+    "climax": { "max_simultaneous_voices": 6 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 8,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "atematico",
+    "density_per_phase": { "intro": 0.2, "build": 0.5, "climax": 0.9, "resolve": 0.3 }
+  },
+
+  "voiceLeading": {
+    "_doc": "Key: C minor (harmonic). i=Cm, iv=Fm, bVI=Ab, V=G",
+    "chords": {
+      "i": {
+        "root":   ["C4", "Eb4", "G4", "C5"],
+        "drop2":  ["C3", "G3", "C4", "Eb4"],
+        "spread": ["C3", "G4", "Eb5"]
+      },
+      "iv": {
+        "root":   ["F3", "Ab3", "C4", "F4"],
+        "drop2":  ["F3", "C4", "F4", "Ab4"],
+        "spread": ["F3", "C5", "Ab5"]
+      },
+      "bVI": {
+        "root":   ["Ab3", "C4", "Eb4", "Ab4"],
+        "drop2":  ["Ab3", "Eb4", "Ab4", "C5"],
+        "spread": ["Ab3", "Eb5", "C6"]
+      },
+      "V": {
+        "root":   ["G3", "B3", "D4", "G4"],
+        "drop2":  ["G3", "D4", "G4", "B4"],
+        "spread": ["G3", "D5", "B5"]
+      }
+    },
+    "transitions": {
+      "i_to_iv":   { "motion": "Eb4→F4 (step up), G4→Ab4 (half-step up), C stays" },
+      "iv_to_bVI": { "motion": "F→Ab (minor 3rd up), Ab→Ab (pedal), C→C (pedal)" },
+      "bVI_to_V":  { "motion": "Ab→G (half-step down), C→B (half-step down), Eb→D (step down)" },
+      "V_to_i":    { "motion": "B→C (half-step up), D→Eb (half-step up), G stays" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "s('timpani').struct('t*4').room(0.5).gain(perlin.range(0.3,0.7))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(s('timpani').struct('t*16').room(0.5).gain(perlin.range(0.5,1.0)), note('<c4 eb4>').s('sawtooth').lpf(sine.range(1000,4000)).gain(0.7))"
+    },
+    "climax_to_resolve": {
+      "type": "drop",
+      "bars_before": 0.5,
+      "strudel": "s('metal').room(0.6).gain(0.7)"
+    }
+  }
+}

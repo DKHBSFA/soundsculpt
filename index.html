@@ -69,15 +69,15 @@
     <main class="welcome-main" role="main">
       <div class="welcome-options" role="group" aria-label="Create new project">
         <button id="btn-generate" class="welcome-btn glass-panel" aria-describedby="btn-generate-desc">
-          <span class="welcome-btn-icon" aria-hidden="true">🎲</span>
+          <span class="welcome-btn-icon" aria-hidden="true">🎵</span>
           <span class="welcome-btn-title">Generate Music</span>
-          <span id="btn-generate-desc" class="welcome-btn-desc">Choose a style and generate</span>
+          <span id="btn-generate-desc" class="welcome-btn-desc">20 styles, AI-powered Strudel patterns</span>
         </button>
 
         <button id="btn-new" class="welcome-btn glass-panel" aria-describedby="btn-new-desc">
           <span class="welcome-btn-icon" aria-hidden="true">📝</span>
-          <span class="welcome-btn-title">Start from Scratch</span>
-          <span id="btn-new-desc" class="welcome-btn-desc">Blank canvas</span>
+          <span class="welcome-btn-title">Blank Canvas</span>
+          <span id="btn-new-desc" class="welcome-btn-desc">Start from scratch</span>
         </button>
       </div>
 
@@ -208,6 +208,7 @@
           <span class="legend-item"><kbd>S</kbd> Solo</span>
           <span class="legend-item"><kbd>M</kbd> Mute</span>
         </div>
+        <div class="voice-panel-resize" id="voice-panel-resize" title="Drag to resize"></div>
       </aside>
 
       <!-- View Container -->
@@ -363,6 +364,23 @@
               <span class="energy-label" aria-hidden="true">High</span>
             </div>
             <span id="energy-value" class="energy-value" aria-live="polite">70%</span>
+          </div>
+        </section>
+
+        <!-- AI Composition Info -->
+        <section class="generation-section ai-info-section" aria-labelledby="ai-info-title">
+          <div class="ai-info-box" role="status" aria-labelledby="ai-info-title">
+            <div class="ai-info-content">
+              <span class="ai-info-icon" aria-hidden="true">✨</span>
+              <div class="ai-info-text">
+                <span class="ai-info-title" id="ai-info-title">AI-Powered Generation</span>
+                <span class="ai-info-desc">Strudel patterns with music theory</span>
+              </div>
+            </div>
+          </div>
+          <div id="ai-key-status" class="ai-key-status">
+            <span class="ai-key-status-text" id="ai-key-status-text">Using default API key</span>
+            <button class="btn-link" id="btn-configure-api-key">Use your own key</button>
           </div>
         </section>
       </div>

@@ -1,0 +1,59 @@
+{
+  "family": "organic",
+  "description": "Wood percussion, page turn, spring, tap. Natural noise component, warmth.",
+  "characteristics": {
+    "attack_ms": [5, 30],
+    "decay_ms": [80, 500],
+    "frequency_range_hz": [200, 4000]
+  },
+  "sounds": {
+    "element-appear": {
+      "label": "Wood tap / finger snap",
+      "strudel": "note('g4').s('pluck').lpf(3000).gain(0.35)",
+      "duration": 60,
+      "velocity": 0.35
+    },
+    "text-typing": {
+      "label": "Pencil scratch",
+      "strudel": "s('brown').lpf(2500).hpf(1500).gain(0.12)",
+      "duration": 30,
+      "velocity": 0.12
+    },
+    "number-count": {
+      "label": "Marimba note",
+      "strudel": "note('c5').s('sine').fm(1.2).fmh(4).lpf(3500).gain(0.35)",
+      "duration": 100,
+      "velocity": 0.35
+    },
+    "card-flip": {
+      "label": "Paper slide",
+      "strudel": "s('white').lpf(2000).hpf(1000).gain(0.2)",
+      "duration": 150,
+      "velocity": 0.2
+    },
+    "scene-transition": {
+      "label": "Brush sweep",
+      "strudel": "s('pink').lpf(1500).room(0.4).gain(0.25).slow(2)",
+      "duration": 500,
+      "velocity": 0.25
+    },
+    "cta-final": {
+      "label": "Acoustic chord",
+      "strudel": "note('c4').s('pluck').room(0.35).gain(0.55)",
+      "duration": 300,
+      "velocity": 0.55
+    },
+    "logo-reveal": {
+      "label": "Wood bell",
+      "strudel": "note('e5').s('sine').fm(1.5).fmh(5.07).room(0.3).gain(0.45)",
+      "duration": 400,
+      "velocity": 0.45
+    },
+    "stat-progress": {
+      "label": "Marimba scale",
+      "strudel": "note('c5').s('sine').fm(1.2).fmh(4).gain(0.3)",
+      "duration": 100,
+      "velocity": 0.3
+    }
+  }
+}

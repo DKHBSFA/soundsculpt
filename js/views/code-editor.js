@@ -8,6 +8,7 @@ import { state } from '../state.js';
 import { history } from '../history.js';
 import { audioContext } from '../audio/context-manager.js';
 import { sampleManager, createSampleUploader, renderWaveform, SamplePlayer } from '../audio/sample-manager.js';
+import { viewSync } from '../sync/view-sync.js';
 
 // === Strudel-like Pattern DSL ===
 
@@ -267,10 +268,19 @@ export function createCodeEditorView(container) {
         <div class="code-header-left">
           <span class="code-voice-label">Code:</span>
           <span class="code-voice-name" id="code-voice-name">No voice selected</span>
+          <div class="phase-selector" id="phase-selector">
+            <button class="phase-btn active" data-phase="climax" title="Climax pattern">climax</button>
+            <button class="phase-btn" data-phase="build" title="Build pattern">build</button>
+            <button class="phase-btn" data-phase="intro" title="Intro pattern">intro</button>
+            <button class="phase-btn" data-phase="resolve" title="Resolve pattern">resolve</button>
+          </div>
         </div>
         <div class="code-header-right">
           <button class="btn btn-sm" id="btn-eval" title="Evaluate pattern (Ctrl+Enter)">
             <span class="btn-icon">▶</span> Eval
+          </button>
+          <button class="btn btn-sm btn-ghost" id="btn-sync" title="Sync to other views">
+            <span class="btn-icon">↻</span> Sync
           </button>
           <button class="btn btn-sm btn-ghost" id="btn-docs" title="Open documentation">
             <span class="btn-icon">?</span> Docs
@@ -352,7 +362,10 @@ s(&quot;bd sd [hh hh] sd&quot;)
   const elements = {
     voiceName: container.querySelector('#code-voice-name'),
     btnEval: container.querySelector('#btn-eval'),
+    btnSync: container.querySelector('#btn-sync'),
     btnDocs: container.querySelector('#btn-docs'),
+    phaseSelector: container.querySelector('#phase-selector'),
+    phaseBtns: container.querySelectorAll('.phase-btn'),
     textarea: container.querySelector('#code-textarea'),
     lineNumbers: container.querySelector('#code-line-numbers'),
     output: container.querySelector('#code-output'),
@@ -374,6 +387,7 @@ s(&quot;bd sd [hh hh] sd&quot;)
   let currentSampleId = null;
   let samplePlayer = null;
   let sampleFileInput = null;
+  let currentPhase = 'climax'; // Default phase to display
 
   // === Example Patterns ===
 
@@ -530,9 +544,28 @@ stack(
    * Save current code to voice state
    */
   function saveCodeToVoice() {
-    if (currentVoiceId) {
+    if (!currentVoiceId) return;
+
+    const voice = state.getVoice(currentVoiceId);
+    const code = getValue();
+
+    // Handle '// silent' as actual silent
+    const actualCode = code.trim() === '// silent' ? 'silent' : code;
+
+    // Check if voice uses phase-based patterns
+    if (voice?.patternCode && typeof voice.patternCode === 'object') {
+      // Update only the current phase
+      const updatedPatternCode = {
+        ...voice.patternCode,
+        [currentPhase]: actualCode,
+      };
       state.updateVoice(currentVoiceId, {
-        patternCode: getValue(),
+        patternCode: updatedPatternCode,
+      });
+    } else {
+      // Simple pattern - update directly
+      state.updateVoice(currentVoiceId, {
+        patternCode: actualCode,
       });
     }
   }
@@ -545,10 +578,69 @@ stack(
     if (voice) {
       currentVoiceId = voiceId;
       elements.voiceName.textContent = voice.name;
-      setValue(voice.patternCode || getDefaultPattern(voice));
+
+      // Check if patternCode has phases (object) or is a single string
+      const patternCode = voice.patternCode;
+
+      if (patternCode && typeof patternCode === 'object') {
+        // Has phases - show phase selector
+        elements.phaseSelector.style.display = 'flex';
+        const phasePattern = patternCode[currentPhase] || patternCode.climax || '';
+        setValue(phasePattern === 'silent' ? '// silent' : phasePattern);
+      } else {
+        // Single pattern - hide phase selector
+        elements.phaseSelector.style.display = 'none';
+        setValue(patternCode || getDefaultPattern(voice));
+      }
+
       showOutput('Ready', 'info');
       setStatus('');
     }
+  }
+
+  /**
+   * Switch to a different phase
+   */
+  function switchPhase(phase) {
+    if (!currentVoiceId) return;
+
+    // Save current phase first
+    saveCodeToVoice();
+
+    currentPhase = phase;
+
+    // Update UI
+    elements.phaseBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.phase === phase);
+    });
+
+    // Load new phase
+    const voice = state.getVoice(currentVoiceId);
+    if (voice?.patternCode && typeof voice.patternCode === 'object') {
+      const phasePattern = voice.patternCode[phase] || '';
+      setValue(phasePattern === 'silent' ? '// silent' : phasePattern);
+    }
+
+    showOutput(`Showing ${phase} pattern`, 'info');
+  }
+
+  /**
+   * Sync pattern to other views (sequencer, piano roll)
+   */
+  function syncToViews() {
+    if (!currentVoiceId) {
+      showOutput('No voice selected', 'error');
+      return;
+    }
+
+    const code = getValue();
+    viewSync.syncPatternCode(currentVoiceId, code);
+
+    showOutput('Synced to other views', 'success');
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: 'Pattern synced to Sequencer and Piano Roll',
+      type: 'success',
+    });
   }
 
   /**
@@ -710,6 +802,16 @@ note("c4 e4 g4 c5")
 
   // Eval button
   elements.btnEval.addEventListener('click', evaluatePattern);
+
+  // Sync button
+  elements.btnSync?.addEventListener('click', syncToViews);
+
+  // Phase selector buttons
+  elements.phaseBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchPhase(btn.dataset.phase);
+    });
+  });
 
   // Docs button
   elements.btnDocs.addEventListener('click', () => {

@@ -1,0 +1,236 @@
+{
+  "style": "orchestral",
+  "description": "Full symphonic texture with wide dynamics, layered strings, brass swells, and cinematic percussion.",
+  "family": "tonal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(chord('D').voicing().s('sine').fm(2.5).fmh(3.01).room(0.45).gain(0.9), note('d2').s('timpani').room(0.4).gain(0.85))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "chord('D').voicing().s('sawtooth').lpf(2500).room(0.4).gain(0.75)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<d4 f#4 a4 d5>').s('sine').fm(2.5).room(0.45).gain(0.7)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["timpani", "bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["strings_high", "shimmer"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["brass", "strings"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 90,
+    "range": [70, 110],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "cadential_insert",
+      "cadenceBars": 2,
+      "forceTonicLastBar": true,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "D",
+
+  "sounds": {
+    "strings": {
+      "source": "sine",
+      "fm": 2.5,
+      "fmh": 3.01,
+      "room": 0.45,
+      "gain": 0.5
+    },
+    "brass": {
+      "source": "sawtooth",
+      "fm": 8,
+      "fmh": 1.5,
+      "lpf": 2500,
+      "room": 0.3,
+      "gain": 0.55
+    },
+    "woodwind": {
+      "source": "sine",
+      "lpf": 2000,
+      "room": 0.4,
+      "gain": 0.55
+    },
+    "timpani": {
+      "source": "timpani",
+      "room": 0.35,
+      "gain": 0.7
+    },
+    "cymbals": {
+      "source": "metal",
+      "room": 0.5,
+      "gain": 0.5
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "stack(chord('<D A Bm G>').voicing().s('sine').fm(2.5).fmh(3.01).room(0.45).gain(0.35).slow(16), note('<d4 a4 f#4 d4>').s('sine').lpf(2000).room(0.4).gain(0.4).slow(16))",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "s('timpani').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~').room(0.35).gain(0.55)",
+      "harmony": "stack(chord('<D A Bm G D F#m G A>').voicing().s('sine').fm(2.5).fmh(3.01).room(0.45).gain(0.45).slow(16), chord('<D A Bm G D F#m G A>').voicing().s('sawtooth').fm(8).fmh(1.5).lpf(2500).room(0.3).gain(0.45).slow(16), note('<d4 e4 f#4 g4 a4 f#4 g4 a4>').s('sine').lpf(2000).room(0.4).gain(0.5).slow(16))",
+      "bass": "silent"
+    },
+    "climax": {
+      "rhythm": "stack(s('timpani').struct('t ~ ~ ~ t/2 ~ ~ ~ t ~ ~ ~ t/2 ~ t/2 t').room(0.35).gain(perlin.range(0.5,1.0)), s('metal').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ t/2').room(0.5).gain(perlin.range(0.4,0.9)))",
+      "harmony": "stack(chord('<D A Bm G D F#m G A>').voicing().s('sine').fm(2.5).fmh(3.01).room(0.45).gain(0.55).slow(16), chord('<D A Bm G D F#m G A>').voicing().s('sawtooth').fm(8).fmh(1.5).lpf(3000).room(0.3).gain(0.55).slow(16), note('<d5 a4 f#4 d4 ~ ~ ~ ~ a4 d5 f#5 e5 d5 ~ ~ ~>').s('sine').lpf(2500).room(0.4).gain(0.55).slow(8))",
+      "brass_melody": "note('<d5 a4 f#4 d4 ~ ~ ~ ~ a4 d5 f#5 e5 d5 ~ ~ ~>').s('sawtooth').fm(8).fmh(1.5).lpf(2800).room(0.3).gain(0.6).slow(8)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "stack(chord('<D>').voicing().s('sine').fm(2.5).fmh(3.01).room(0.5).gain(perlin.range(0.25,0.4)).slow(8), note('d4').s('sine').lpf(1800).room(0.45).gain(perlin.range(0.3,0.45)).slow(8))",
+      "bass": "silent"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["I", "V", "vi", "IV", "I", "iii", "IV", "V"],
+    "scale": "major",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "functional_tonal",
+    "functions": {
+      "I": "T",
+      "V": "D",
+      "vi": "T(relative)",
+      "IV": "SD",
+      "iii": "T(mediant)"
+    },
+    "cadences": {
+      "primary": "half",
+      "reasoning": "Last two chords IV->V = half cadence"
+    }
+  },
+
+  "arc": {
+    "intro": { "layers": ["strings", "woodwind"], "velocity": 0.3 },
+    "build": { "layers": ["strings", "woodwind", "brass"], "velocity": 0.55 },
+    "climax": { "layers": ["strings", "brass", "woodwind", "timpani", "cymbals"], "velocity": 0.9 },
+    "resolve": { "layers": ["strings", "woodwind"], "velocity": 0.35 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 3 },
+    "climax": { "max_simultaneous_voices": 5 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 6,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "periodo_tematico",
+    "phrases": [
+      { "role": "antecedent", "cadence": "half" },
+      { "role": "consequent", "cadence": "authentic" }
+    ],
+    "development": {
+      "climax": "augmentation_with_orchestral_swell",
+      "resolve": "inversion_of_antecedent"
+    }
+  },
+
+  "voiceLeading": {
+    "_key": "D major",
+    "chords": {
+      "I": {
+        "root": ["D3", "F#3", "A3", "D4"],
+        "drop2": ["F#2", "D3", "A3", "D4"],
+        "spread": ["D2", "A3", "F#4", "D5"]
+      },
+      "V": {
+        "root": ["A3", "C#4", "E4"],
+        "drop2": ["C#3", "A3", "E4"],
+        "spread": ["A2", "E4", "C#5"]
+      },
+      "vi": {
+        "root": ["B3", "D4", "F#4"],
+        "drop2": ["D3", "B3", "F#4"],
+        "spread": ["B2", "F#4", "D5"]
+      },
+      "IV": {
+        "root": ["G3", "B3", "D4"],
+        "drop2": ["B2", "G3", "D4"],
+        "spread": ["G2", "D4", "B4"]
+      },
+      "iii": {
+        "root": ["F#3", "A3", "C#4"],
+        "drop2": ["A2", "F#3", "C#4"],
+        "spread": ["F#2", "C#4", "A4"]
+      }
+    },
+    "transitions": {
+      "I_to_V": { "motion": "D4->E4 (step up), F#3->E4 (step), A3->A3 (common)", "parallel_motion_check": "no parallel P5 or P8" },
+      "V_to_vi": { "motion": "A3->B3 (step up), C#4->D4 (step up), E4->F#4 (step up)", "parallel_motion_check": "no parallel P5 or P8" },
+      "vi_to_IV": { "motion": "B3->B3 (common), D4->D4 (common), F#4->G4 (step up)", "parallel_motion_check": "no parallel P5 or P8" },
+      "IV_to_I": { "motion": "G3->F#3 (step down), B3->A3 (step down), D4->D4 (common)", "parallel_motion_check": "no parallel P5 or P8" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "chord('D').voicing().s('sine').fm(2.5).room(0.45).gain(perlin.range(0.3,0.5)).slow(4)"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(s('timpani').struct('t*32').gain(perlin.range(0.3,1.0)), s('metal').gain(perlin.range(0.2,0.9)).slow(4))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('D').voicing().s('sine').fm(2.5).room(0.55).gain(perlin.range(0.3,0.5)).slow(2)"
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "template_id": "epic_trailer",
+  "display_name": "Epic Trailer",
+  "description": "Cinematic orchestral intensity for film trailers, game launches, and epic product reveals",
+  "use_cases": ["film trailer", "game trailer", "product launch", "reveal", "announcement"],
+
+  "parameters": {
+    "duration": {
+      "type": "enum",
+      "values": ["15s", "30s", "60s"],
+      "default": "30s"
+    },
+    "energy": {
+      "type": "range",
+      "min": 0.5,
+      "max": 1.0,
+      "default": 0.85
+    },
+    "voiceover": {
+      "type": "bool",
+      "default": false
+    }
+  },
+
+  "base_style": "cinematic",
+
+  "duration_adaptations": {
+    "15s": {
+      "arc_strategy": "no_arc",
+      "impact_intensity": 1.0,
+      "bars": 6,
+      "phases": {
+        "impact": [0, 1],
+        "climax": [1, 5],
+        "resolve": [5, 6]
+      }
+    },
+    "30s": {
+      "arc_strategy": "compressed",
+      "impact_intensity": 0.95,
+      "bars": 12,
+      "phases": {
+        "impact": [0, 1],
+        "build": [1, 6],
+        "climax": [6, 10],
+        "resolve": [10, 12]
+      }
+    },
+    "60s": {
+      "arc_strategy": "full",
+      "impact_intensity": 0.85,
+      "bars": 24,
+      "phases": {
+        "impact": [0, 1],
+        "intro": [1, 6],
+        "build": [6, 12],
+        "climax": [12, 20],
+        "resolve": [20, 24]
+      }
+    }
+  },
+
+  "energy_scaling": {
+    "affects": ["velocity_multiplier", "density", "filter_brightness"],
+    "formula": {
+      "velocity_multiplier": "0.6 + (energy * 0.4)",
+      "density": "energy < 0.6 ? 'balanced' : 'dense'",
+      "filter_brightness": "1500 + (energy * 2500)"
+    }
+  },
+
+  "voiceover_adaptation": {
+    "if_true": {
+      "apply_mode": "voiceover_bed",
+      "mid_gain_reduction": 0.35
+    }
+  },
+
+  "style_overrides": {
+    "temporal": {
+      "bpm": 80
+    },
+    "key": "D minor",
+    "sounds": {
+      "strings": {
+        "room": 0.55,
+        "gain": 0.7
+      },
+      "brass": {
+        "lpf": 2500,
+        "gain": 0.75
+      }
+    }
+  }
+}

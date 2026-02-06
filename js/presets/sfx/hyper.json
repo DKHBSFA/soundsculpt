@@ -1,0 +1,59 @@
+{
+  "family": "hyper",
+  "description": "Massive impacts, laser, aggressive stingers, reverse cymbal. Maximum transients, violent.",
+  "characteristics": {
+    "attack_ms": [0, 5],
+    "decay_ms": [50, 800],
+    "frequency_range_hz": [40, 12000]
+  },
+  "sounds": {
+    "element-appear": {
+      "label": "Aggressive pop/snap",
+      "strudel": "note('c3').s('sine').fm(6).fmh(6).gain(0.8)",
+      "duration": 60,
+      "velocity": 0.8
+    },
+    "text-typing": {
+      "label": "Rapid rhythmic click",
+      "strudel": "s('metal').hpf(5000).gain(0.4)",
+      "duration": 30,
+      "velocity": 0.4
+    },
+    "number-count": {
+      "label": "Arcade coin",
+      "strudel": "note('b6').s('sine').fm(12).fmh(7).crush(6).gain(0.55)",
+      "duration": 100,
+      "velocity": 0.55
+    },
+    "card-flip": {
+      "label": "Aggressive whoosh",
+      "strudel": "s('white').lpf(sine.range(3000,12000)).hpf(1000).gain(0.7)",
+      "duration": 100,
+      "velocity": 0.7
+    },
+    "scene-transition": {
+      "label": "Impact + reverse",
+      "strudel": "note('c1').s('sine').fm(8).fmh(8).room(0.5).gain(0.9)",
+      "duration": 300,
+      "velocity": 0.9
+    },
+    "cta-final": {
+      "label": "Power chord + clap",
+      "strudel": "note('e3').s('sawtooth').fm(8).fmh(1.5).room(0.4).gain(0.95)",
+      "duration": 300,
+      "velocity": 0.95
+    },
+    "logo-reveal": {
+      "label": "Massive stinger",
+      "strudel": "note('c3').s('sawtooth').fm(14).fmh(2).room(0.5).gain(1.0).slow(2)",
+      "duration": 500,
+      "velocity": 1.0
+    },
+    "stat-progress": {
+      "label": "Rapid bell chain",
+      "strudel": "s('metal').hpf(6000).gain(0.5)",
+      "duration": 60,
+      "velocity": 0.5
+    }
+  }
+}

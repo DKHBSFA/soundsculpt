@@ -1,0 +1,230 @@
+{
+  "style": "cinematic",
+  "description": "Sweeping orchestral-style synthesis with wide dynamics, deep sub bass, and evolving textures for trailers and emotional narratives.",
+  "family": "tonal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(chord('Dm').voicing().s('sawtooth').fm(0.5).fmh(3).room(0.55).gain(0.9), note('d1').s('sine').lpf(200).gain(0.85))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "chord('Dm').voicing().s('piano').room(0.45).gain(0.7)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<d4 f4 a4 d5>').s('sawtooth').fm(0.5).room(0.5).gain(0.7)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["sub_bass", "timpani"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["strings_high", "shimmer"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["piano", "strings"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 72,
+    "range": [60, 90],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "cadential_insert",
+      "cadenceBars": 2,
+      "forceTonicLastBar": true,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "D minor",
+
+  "sounds": {
+    "strings": {
+      "source": "sawtooth",
+      "fm": 0.5,
+      "fmh": 3,
+      "room": 0.55,
+      "gain": 0.55
+    },
+    "piano": {
+      "source": "piano",
+      "room": 0.5,
+      "delay": 0.2,
+      "gain": 0.55
+    },
+    "sub_bass": {
+      "source": "sine",
+      "lpf": 120,
+      "gain": 0.8
+    },
+    "pad": {
+      "source": "sine",
+      "fm": 2,
+      "fmh": 0.5,
+      "room": 0.6,
+      "gain": 0.4
+    },
+    "timpani": {
+      "source": "timpani",
+      "room": 0.4,
+      "gain": 0.7
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "chord('<Dm>').voicing().s('sine').fm(2).fmh(0.5).room(0.6).gain(0.3).slow(8)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "s('timpani').struct('t ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~').room(0.4).gain(0.5)",
+      "harmony": "stack(chord('<Dm Bb F C>').voicing().s('sine').fm(2).fmh(0.5).room(0.6).gain(0.45).slow(8), chord('<Dm Bb F C>').voicing().s('sawtooth').fm(0.5).fmh(3).room(0.55).gain(0.5).slow(8), chord('<Dm Bb F C>').voicing().s('piano').room(0.5).delay(0.2).gain(0.45).slow(8))",
+      "bass": "note('<d1 bb0 f1 c1>').s('sine').lpf(120).gain(0.7).slow(8)"
+    },
+    "climax": {
+      "rhythm": "s('timpani').struct('t ~ ~ ~ ~ ~ ~ ~ t/2 ~ ~ ~ t ~ ~ t/2').room(0.4).gain(perlin.range(0.6,1.0))",
+      "harmony": "stack(chord('<Dm Bb F C>').voicing().s('sine').fm(2).fmh(0.5).room(0.6).gain(0.55).slow(8), chord('<Dm Bb F C>').voicing().s('sawtooth').fm(0.5).fmh(3).room(0.55).gain(0.65).slow(8), chord('<Dm Bb F C>').voicing().s('piano').room(0.5).delay(0.2).gain(0.55).slow(8))",
+      "bass": "note('<d1 bb0 f1 c1>').s('sine').lpf(140).gain(0.85).slow(8)",
+      "strings_melody": "note('<a4 bb4 c5 d5 f5 ~ ~ ~ d5 c5 a4 f4 ~ ~ ~ ~>').s('sawtooth').fm(0.5).fmh(3).room(0.55).gain(0.6).slow(4)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "stack(chord('<Dm>').voicing().s('sine').fm(2).fmh(0.5).room(0.65).gain(perlin.range(0.2,0.35)).slow(8), chord('<Dm>').voicing().s('piano').room(0.55).delay(0.25).gain(perlin.range(0.25,0.4)).slow(8))",
+      "bass": "silent"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "VI", "III", "VII"],
+    "scale": "natural_minor",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "functional_tonal",
+    "functions": {
+      "i": "T",
+      "VI": "SD",
+      "III": "T(mediant)",
+      "VII": "D"
+    },
+    "cadences": {
+      "primary": "half",
+      "reasoning": "Last chord is VII (D function) - progression ends on dominant = half cadence"
+    }
+  },
+
+  "arc": {
+    "intro": { "layers": ["pad"], "velocity": 0.3 },
+    "build": { "layers": ["pad", "piano", "strings", "sub_bass"], "velocity": 0.6 },
+    "climax": { "layers": ["pad", "piano", "strings", "sub_bass", "timpani"], "velocity": 0.9 },
+    "resolve": { "layers": ["pad", "piano"], "velocity": 0.3 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 1 },
+    "build": { "max_simultaneous_voices": 4 },
+    "climax": { "max_simultaneous_voices": 5 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 6,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "periodo_tematico",
+    "phrases": [
+      { "role": "antecedent", "cadence": "half" },
+      { "role": "consequent", "cadence": "deceptive" }
+    ],
+    "development": {
+      "climax": "augmentation_with_orchestral_swell",
+      "resolve": "inversion_of_antecedent"
+    }
+  },
+
+  "voiceLeading": {
+    "_doc": "Concrete voicings for D minor: i=Dm, VI=Bb, III=F, VII=C",
+    "chords": {
+      "Dm": {
+        "root": ["D2", "A2", "D3", "F3", "A3"],
+        "drop2": ["D2", "A2", "F3", "A3", "D4"],
+        "spread": ["D2", "D3", "A3", "F4"]
+      },
+      "Bb": {
+        "root": ["Bb1", "F2", "Bb2", "D3", "F3"],
+        "drop2": ["Bb1", "F2", "D3", "F3", "Bb3"],
+        "spread": ["Bb1", "Bb2", "F3", "D4"]
+      },
+      "F": {
+        "root": ["F2", "C3", "F3", "A3", "C4"],
+        "drop2": ["F2", "C3", "A3", "C4", "F4"],
+        "spread": ["F2", "F3", "C4", "A4"]
+      },
+      "C": {
+        "root": ["C2", "G2", "C3", "E3", "G3"],
+        "drop2": ["C2", "G2", "E3", "G3", "C4"],
+        "spread": ["C2", "C3", "G3", "E4"]
+      }
+    },
+    "transitions": {
+      "Dm_to_Bb": { "motion": "bass descends major third D->Bb, F3 common tone, A3->D3 inner voice descends", "parallel_motion_check": "no parallel P5 or P8" },
+      "Bb_to_F": { "motion": "bass ascends fifth Bb->F, D3->C3, voices move in parallel motion upward", "parallel_motion_check": "no parallel P5 or P8" },
+      "F_to_C": { "motion": "bass descends fourth F->C, A3->G3, C4 holds common tone", "parallel_motion_check": "no parallel P5 or P8" },
+      "C_to_Dm": { "motion": "bass ascends step C->D, E3->F3 chromatic approach, G3->A3", "parallel_motion_check": "no parallel P5 or P8" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "chord('Dm').voicing().s('sine').fm(2).room(0.6).lpf(sine.range(200,1500)).gain(perlin.range(0.2,0.45)).slow(4)"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(s('timpani').struct('t*8').gain(perlin.range(0.3,1.0)), chord('Dm').voicing().s('sawtooth').fm(0.5).room(0.55).gain(perlin.range(0.4,0.7)).slow(2))"
+    },
+    "climax_to_resolve": {
+      "type": "drop",
+      "bars_before": 0.5,
+      "strudel": "s('timpani').struct('t').room(0.6).gain(1.0)"
+    }
+  }
+}

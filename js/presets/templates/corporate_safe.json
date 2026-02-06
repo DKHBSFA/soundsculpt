@@ -1,0 +1,84 @@
+{
+  "template_id": "corporate_safe",
+  "display_name": "Corporate / B2B",
+  "description": "Professional, clean background music for business presentations, B2B marketing, and enterprise content",
+  "use_cases": ["B2B", "enterprise", "fintech", "corporate", "presentation", "explainer"],
+
+  "parameters": {
+    "duration": {
+      "type": "enum",
+      "values": ["30s", "60s"],
+      "default": "60s"
+    },
+    "energy": {
+      "type": "range",
+      "min": 0.3,
+      "max": 0.7,
+      "default": 0.5
+    },
+    "voiceover": {
+      "type": "bool",
+      "default": true
+    }
+  },
+
+  "base_style": "corporate",
+
+  "duration_adaptations": {
+    "30s": {
+      "arc_strategy": "compressed",
+      "impact_intensity": 0.7,
+      "bars": 14,
+      "phases": {
+        "impact": [0, 1],
+        "build": [1, 7],
+        "climax": [7, 12],
+        "resolve": [12, 14]
+      }
+    },
+    "60s": {
+      "arc_strategy": "full",
+      "impact_intensity": 0.6,
+      "bars": 28,
+      "phases": {
+        "impact": [0, 1],
+        "intro": [1, 7],
+        "build": [7, 14],
+        "climax": [14, 24],
+        "resolve": [24, 28]
+      }
+    }
+  },
+
+  "energy_scaling": {
+    "affects": ["velocity_multiplier", "density", "filter_brightness"],
+    "formula": {
+      "velocity_multiplier": "0.45 + (energy * 0.35)",
+      "density": "energy < 0.5 ? 'sparse' : 'balanced'",
+      "filter_brightness": "1000 + (energy * 1500)"
+    }
+  },
+
+  "voiceover_adaptation": {
+    "if_true": {
+      "apply_mode": "voiceover_bed",
+      "mid_gain_reduction": 0.45
+    }
+  },
+
+  "style_overrides": {
+    "temporal": {
+      "bpm": 90
+    },
+    "key": "C major",
+    "sounds": {
+      "piano": {
+        "room": 0.3,
+        "gain": 0.6
+      },
+      "pad": {
+        "gain": 0.4
+      }
+    }
+  }
+}

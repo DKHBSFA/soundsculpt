@@ -1,0 +1,59 @@
+{
+  "family": "cinematic",
+  "description": "Deep impacts, orchestral risers, swells, brass stabs. Wide dynamics, long reverb.",
+  "characteristics": {
+    "attack_ms": [5, 500],
+    "decay_ms": [200, 3000],
+    "frequency_range_hz": [60, 5000]
+  },
+  "sounds": {
+    "element-appear": {
+      "label": "String swell",
+      "strudel": "note('d4').s('sine').fm(2).fmh(2).room(0.5).gain(0.35).slow(2)",
+      "duration": 500,
+      "velocity": 0.35
+    },
+    "text-typing": {
+      "label": "Silence",
+      "strudel": "silent",
+      "duration": 0,
+      "velocity": 0
+    },
+    "number-count": {
+      "label": "Timpani roll",
+      "strudel": "note('c2').s('timpani').room(0.45).gain(0.4)",
+      "duration": 200,
+      "velocity": 0.4
+    },
+    "card-flip": {
+      "label": "Harp glissando",
+      "strudel": "note('c5').s('pluck').room(0.5).gain(0.4)",
+      "duration": 200,
+      "velocity": 0.4
+    },
+    "scene-transition": {
+      "label": "Cymbal swell",
+      "strudel": "s('metal').room(0.6).gain(0.35).slow(4)",
+      "duration": 1000,
+      "velocity": 0.35
+    },
+    "cta-final": {
+      "label": "Brass resolve",
+      "strudel": "note('c4').s('sawtooth').fm(3).fmh(1).lpf(2000).room(0.5).gain(0.7).slow(2)",
+      "duration": 500,
+      "velocity": 0.7
+    },
+    "logo-reveal": {
+      "label": "Orchestra stab",
+      "strudel": "note('c3').s('sawtooth').fm(5).fmh(1.5).lpf(3000).room(0.55).gain(0.75)",
+      "duration": 300,
+      "velocity": 0.75
+    },
+    "stat-progress": {
+      "label": "Pizzicato strings",
+      "strudel": "note('g4').s('pluck').room(0.35).gain(0.35)",
+      "duration": 100,
+      "velocity": 0.35
+    }
+  }
+}

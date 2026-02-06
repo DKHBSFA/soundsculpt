@@ -1,0 +1,231 @@
+{
+  "style": "acoustic",
+  "description": "Warm, organic-sounding plucked strings, marimba, and gentle percussion evoking ukulele folk and handmade charm.",
+  "family": "tonal",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "chord('C').voicing().s('pluck').room(0.25).gain(0.85)"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "note('<c4 e4 g4>').s('pluck').hpf(400).room(0.2).gain(0.7)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<g4 e4 c4 g3>').s('pluck').room(0.25).gain(0.65)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["shaker", "marimba_high"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["guitar", "ukulele"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 100,
+    "range": [90, 110],
+    "swing": 0.15,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "cadential_insert",
+      "cadenceBars": 2,
+      "forceTonicLastBar": true,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "C major",
+
+  "sounds": {
+    "guitar": {
+      "source": "pluck",
+      "room": 0.25,
+      "gain": 0.7
+    },
+    "ukulele": {
+      "source": "pluck",
+      "hpf": 400,
+      "room": 0.2,
+      "gain": 0.6
+    },
+    "marimba": {
+      "source": "sine",
+      "fm": 8,
+      "fmh": 12,
+      "room": 0.3,
+      "gain": 0.55
+    },
+    "bass": {
+      "source": "pluck",
+      "lpf": 800,
+      "gain": 0.75
+    },
+    "shaker": {
+      "source": "white",
+      "hpf": 5000,
+      "lpf": 12000,
+      "gain": 0.35
+    },
+    "pad": {
+      "source": "sine",
+      "room": 0.45,
+      "gain": 0.4
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "silent",
+      "harmony": "chord('<C F G C>').voicing().s('sine').room(0.45).gain(0.4).slow(8)",
+      "guitar": "note('<c4 e4 g4 c5>(3,8)').s('pluck').room(0.25).gain(0.55).slow(2)"
+    },
+    "build": {
+      "rhythm": "s('white').struct('t t t t t t t t').hpf(5000).lpf(12000).gain(0.3)",
+      "harmony": "chord('<C F G C>').voicing().s('sine').room(0.45).gain(0.5).slow(4)",
+      "guitar": "note('<c4 e4 g4 c5>(5,8)').s('pluck').room(0.25).gain(0.65)",
+      "ukulele": "note('<c5 e5 g5 c6>').struct('~ ~ t ~ ~ ~ t ~').s('pluck').hpf(400).room(0.2).gain(0.5)",
+      "bass": "note('<c2 f2 g2 c2>').s('pluck').lpf(800).gain(0.7).slow(4)"
+    },
+    "climax": {
+      "rhythm": "s('white').struct('t t t t t t t t t t t t t t t t').hpf(5000).lpf(12000).gain(0.4)",
+      "harmony": "chord('<C F G C>').voicing().s('sine').room(0.45).gain(0.6).slow(4)",
+      "guitar": "note('<c4 e4 g4 c5 g4 e4>(7,8)').s('pluck').room(0.25).gain(0.75)",
+      "ukulele": "note('<c5 e5 g5 c6>').struct('~ t t t ~ t t t').s('pluck').hpf(400).room(0.2).gain(0.6)",
+      "marimba": "note('<c5 ~ ~ e5 ~ ~ g5 ~ c6 ~ ~ e5 ~ ~ g5 ~>').s('sine').fm(8).fmh(12).room(0.3).gain(0.55)",
+      "bass": "note('<c2 g2 f2 c3 g2 f2 c2 g1>').s('pluck').lpf(800).gain(0.8)"
+    },
+    "resolve": {
+      "rhythm": "silent",
+      "harmony": "chord('<C>').voicing().s('sine').room(0.45).gain(perlin.range(0.2,0.35)).slow(4)",
+      "guitar": "note('<c4 e4 g4 c5>(3,8)').s('pluck').room(0.25).gain(perlin.range(0.35,0.5)).slow(2)"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["I", "IV", "V", "I"],
+    "scale": "major",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "functional_tonal",
+    "functions": {
+      "I": "T",
+      "IV": "SD",
+      "V": "D"
+    },
+    "cadences": {
+      "primary": "authentic",
+      "reasoning": "V→I = authentic cadence"
+    }
+  },
+
+  "arc": {
+    "intro": { "layers": ["guitar", "pad"], "velocity": 0.4 },
+    "build": { "layers": ["guitar", "ukulele", "bass", "shaker", "pad"], "velocity": 0.6 },
+    "climax": { "layers": ["guitar", "ukulele", "marimba", "bass", "shaker", "pad"], "velocity": 0.75 },
+    "resolve": { "layers": ["guitar", "pad"], "velocity": 0.35 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 5 },
+    "climax": { "max_simultaneous_voices": 6 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 6,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "periodo_tematico",
+    "phrases": [
+      { "role": "antecedent", "cadence": "half" },
+      { "role": "consequent", "cadence": "authentic" }
+    ],
+    "development": {
+      "climax": "ascending_sequence_by_step",
+      "resolve": "consequent_simplified"
+    }
+  },
+
+  "voiceLeading": {
+    "_doc": "Key: C major. I=C, IV=F, V=G",
+    "chords": {
+      "I": {
+        "root":   ["C4", "E4", "G4", "C5"],
+        "drop2":  ["C3", "G3", "C4", "E4"],
+        "spread": ["C3", "G4", "E5"]
+      },
+      "IV": {
+        "root":   ["F3", "A3", "C4", "F4"],
+        "drop2":  ["F3", "C4", "F4", "A4"],
+        "spread": ["F3", "C5", "A5"]
+      },
+      "V": {
+        "root":   ["G3", "B3", "D4", "G4"],
+        "drop2":  ["G3", "D4", "G4", "B4"],
+        "spread": ["G3", "D5", "B5"]
+      }
+    },
+    "transitions": {
+      "I_to_IV":  { "motion": "E4→F4 (half-step up), G4→A4 (step up), C stays", "parallel_motion_check": "no parallel P5 or P8" },
+      "IV_to_V":  { "motion": "F→G (step up), A→B (step up), C→D (step up)", "parallel_motion_check": "no parallel P5 or P8" },
+      "V_to_I":   { "motion": "B→C (half-step up), D→E (step up), G stays", "parallel_motion_check": "no parallel P5 or P8" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "note('<c4 e4 g4 c5>').s('pluck').room(0.3).gain(perlin.range(0.5,0.7))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 0.5,
+      "strudel": "stack(s('white').struct('t*16').hpf(5000).gain(perlin.range(0.2,0.5)), note('<c4 e4 g4>').s('pluck').gain(0.7))"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "chord('C').voicing().s('sine').room(0.5).gain(perlin.range(0.2,0.4)).slow(2)"
+    }
+  }
+}

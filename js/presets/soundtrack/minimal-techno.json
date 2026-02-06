@@ -1,0 +1,204 @@
+{
+  "style": "minimal-techno",
+  "description": "Hypnotic 4/4 pulse with micro-textural shifts, slow filter sweeps, and sparse melodic fragments.",
+  "family": "loop",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "s('RolandTR909_bd').struct('t').gain(1.0)"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "s('RolandTR909_hh').struct('~ t').hpf(10000).gain(0.6)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('a2').s('sawtooth').lpf(sine.range(200,1500)).gain(0.7)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass", "kick"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["hihat", "texture"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["synth_stab", "clap"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 124,
+    "range": [120, 130],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "hard_cut",
+      "cadenceBars": 0,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "Am",
+
+  "sounds": {
+    "kick": {
+      "source": "bd",
+      "bank": "RolandTR909",
+      "gain": 0.9
+    },
+    "hihat": {
+      "source": "hh",
+      "bank": "RolandTR909",
+      "hpf": 10000,
+      "gain": 0.5
+    },
+    "bass": {
+      "source": "sawtooth",
+      "lpf": 600,
+      "gain": 0.75
+    },
+    "pad": {
+      "source": "sine",
+      "fm": 1.5,
+      "fmh": 2,
+      "room": 0.5,
+      "lpf": "sine.range(200,2000).slow(8)",
+      "gain": 0.4
+    },
+    "perc": {
+      "source": "white",
+      "lpf": 3000,
+      "hpf": 1000,
+      "delay": 0.3,
+      "gain": 0.35
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "stack(s('RolandTR909_bd').struct('t ~ ~ ~ t ~ ~ ~'), s('RolandTR909_hh').struct('~ ~ t ~ ~ ~ t ~').gain(0.4))",
+      "harmony": "silent",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "stack(s('RolandTR909_bd').struct('t ~ ~ ~ t ~ ~ ~'), s('RolandTR909_hh').struct('~ ~ t ~ ~ ~ t ~ ~ ~ t ~ ~ ~ t t/2').gain(0.5), s('white').struct('~ ~ ~ ~ ~ ~ ~ t/2').lpf(3000).hpf(1000).delay(0.3).gain(0.35))",
+      "harmony": "silent",
+      "bass": "note('<a1 ~ e1 ~ a1 ~ e1 ~>').s('sawtooth').lpf(600).gain(0.65)"
+    },
+    "climax": {
+      "rhythm": "stack(s('RolandTR909_bd').struct('t ~ ~ ~ t ~ ~ ~'), s('RolandTR909_hh').struct('t ~ t ~ t ~ t ~ t ~ t ~ t ~ t t/2').gain(0.55), s('white').struct('~ ~ ~ ~ t ~ ~ t/2 ~ ~ ~ ~ t ~ ~ t/2').lpf(3000).hpf(1000).delay(0.3).gain(0.4))",
+      "harmony": "chord('<Am>').voicing().s('sine').fm(1.5).fmh(2).room(0.5).lpf(sine.range(400,1600).slow(8)).gain(0.4).slow(4)",
+      "bass": "note('<a1 e1 a1 ~ a1 e1 a1 e1>').s('sawtooth').lpf(700).gain(0.75)"
+    },
+    "resolve": {
+      "rhythm": "s('RolandTR909_bd').struct('t ~ ~ ~ t ~ ~ ~').gain(perlin.range(0.6,0.9))",
+      "harmony": "chord('<Am>').voicing().s('sine').fm(1.5).fmh(2).room(0.6).lpf(perlin.range(200,600).slow(4)).gain(0.3).slow(4)",
+      "bass": "silent"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "i", "iv", "i"],
+    "scale": "aeolian",
+    "bars_per_chord": 4
+  },
+
+  "harmonic_system": {
+    "type": "timbral_vector",
+    "field": "Am",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["kick", "hihat"], "velocity": 0.4 },
+    "build": { "layers": ["kick", "hihat", "bass", "perc"], "velocity": 0.55 },
+    "climax": { "layers": ["kick", "hihat", "bass", "pad", "perc"], "velocity": 0.7 },
+    "resolve": { "layers": ["kick", "pad"], "velocity": 0.35 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 4 },
+    "climax": { "max_simultaneous_voices": 5 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 7,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "drop_structure",
+    "tension_point": "build_to_climax",
+    "release": "rhythmic"
+  },
+
+  "voiceLeading": {
+    "_key": "A minor (aeolian)",
+    "chords": {
+      "i": {
+        "root": ["A2", "C3", "E3"],
+        "drop2": ["C2", "A2", "E3"],
+        "spread": ["A1", "E3", "C4"]
+      },
+      "iv": {
+        "root": ["D3", "F3", "A3"],
+        "drop2": ["F2", "D3", "A3"],
+        "spread": ["D2", "A3", "F4"]
+      }
+    },
+    "transitions": {
+      "i_to_iv": { "motion": "A2->A3 (common), C3->D3 (step up), E3->F3 (step up)" },
+      "iv_to_i": { "motion": "D3->C3 (step down), F3->E3 (step down), A3->A3 (common)" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "s('white').gain(perlin.range(0.1,0.5)).hpf(sine.range(200,12000))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 0.5,
+      "strudel": "s('white').struct('t*32').gain(perlin.range(0.2,0.8)).lpf(8000)"
+    },
+    "climax_to_resolve": {
+      "type": "fadeout",
+      "bars_before": 1,
+      "strudel": "note('a1').s('sine').fm(1).room(0.8).gain(perlin.range(0.2,0.4)).slow(2)"
+    }
+  }
+}

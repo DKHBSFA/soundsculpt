@@ -660,3 +660,350 @@ export function createDefaultArpState() {
     gate: 0.8,   // Note length as fraction of rate
   };
 }
+
+// ============================================
+// CHORD MOVEMENT RULES
+// ============================================
+
+/**
+ * Common chord movement rules by scale degree
+ * Each degree maps to common and rare target degrees
+ */
+export const CHORD_MOVEMENTS = {
+  1: { common: [4, 5, 6], rare: [2, 3] },      // I  -> IV, V, vi; rarely ii, iii
+  2: { common: [5, 7], rare: [4, 6] },          // ii -> V, vii°; rarely IV, vi
+  3: { common: [6, 4], rare: [2, 5] },          // iii -> vi, IV; rarely ii, V
+  4: { common: [5, 1, 2], rare: [6] },          // IV -> V, I, ii; rarely vi
+  5: { common: [1, 6], rare: [4] },             // V  -> I, vi; rarely IV
+  6: { common: [4, 2, 5], rare: [3, 1] },       // vi -> IV, ii, V; rarely iii, I
+  7: { common: [1, 3], rare: [5] },             // vii° -> I, iii; rarely V
+};
+
+// ============================================
+// BORROWED CHORDS (Modal Interchange)
+// ============================================
+
+/**
+ * Get borrowed chords from parallel mode
+ * @param {string} root - Scale root
+ * @param {string} mode - 'major' or 'minor'
+ * @returns {Object[]} Array of borrowed chord objects
+ */
+export function getBorrowedChords(root, mode = 'major') {
+  const rootPc = noteNameToPitchClass(root);
+
+  // Borrowed from parallel minor (when in major)
+  const borrowedFromMinor = [
+    { degree: 'bIII', intervals: [3, 7], type: 'major', name: 'Flat III' },
+    { degree: 'iv', intervals: [5, 8], type: 'minor', name: 'Minor iv' },
+    { degree: 'bVI', intervals: [8, 12], type: 'major', name: 'Flat VI' },
+    { degree: 'bVII', intervals: [10, 14], type: 'major', name: 'Flat VII' },
+  ];
+
+  // Borrowed from parallel major (when in minor)
+  const borrowedFromMajor = [
+    { degree: 'IV', intervals: [5, 9], type: 'major', name: 'Major IV' },
+    { degree: 'I', intervals: [0, 4], type: 'major', name: 'Picardy I' },
+  ];
+
+  const borrowedList = mode === 'major' ? borrowedFromMinor : borrowedFromMajor;
+
+  return borrowedList.map(chord => {
+    const chordRoot = (rootPc + chord.intervals[0]) % 12;
+    return {
+      root: NOTE_NAMES[chordRoot],
+      type: chord.type,
+      degree: chord.degree,
+      name: chord.name,
+      midi: chord.intervals.map(i => (rootPc + i) % 12 + 60),
+    };
+  });
+}
+
+// ============================================
+// SECONDARY DOMINANTS
+// ============================================
+
+/**
+ * Get secondary dominant for a target scale degree
+ * @param {number} targetDegree - Target scale degree (1-7)
+ * @param {string} root - Scale root
+ * @param {string} scaleType - Scale type
+ * @returns {Object|null} Secondary dominant chord or null if not applicable
+ */
+export function getSecondaryDominant(targetDegree, root, scaleType = 'major') {
+  // Cannot have secondary dominant to degree 7 (diminished) or 1 (that's just V)
+  if (targetDegree === 7 || targetDegree === 1) return null;
+
+  const rootPc = noteNameToPitchClass(root);
+  const scaleIntervals = SCALES[scaleType] || SCALES.major;
+
+  // Get the target chord root
+  const targetRootInterval = scaleIntervals[targetDegree - 1];
+  const targetRootPc = (rootPc + targetRootInterval) % 12;
+
+  // Secondary dominant is a perfect fifth above the target
+  const secDomRootPc = (targetRootPc + 7) % 12;
+
+  return {
+    root: NOTE_NAMES[secDomRootPc],
+    type: '7',
+    degree: `V/${targetDegree}`,
+    targetDegree,
+    midi: [secDomRootPc + 60, secDomRootPc + 64, secDomRootPc + 67, secDomRootPc + 70],
+  };
+}
+
+/**
+ * Get all possible secondary dominants for a scale
+ * @param {string} root - Scale root
+ * @param {string} scaleType - Scale type
+ * @returns {Object[]} Array of secondary dominant chords
+ */
+export function getAllSecondaryDominants(root, scaleType = 'major') {
+  const secondaryDoms = [];
+
+  // V/ii, V/iii, V/IV, V/V, V/vi (degree 2-6)
+  for (let degree = 2; degree <= 6; degree++) {
+    const secDom = getSecondaryDominant(degree, root, scaleType);
+    if (secDom) secondaryDoms.push(secDom);
+  }
+
+  return secondaryDoms;
+}
+
+// ============================================
+// CADENCE DETECTION AND SUGGESTION
+// ============================================
+
+/**
+ * Identify cadence type from two consecutive chords
+ * @param {Object} chord1 - First chord {root, type}
+ * @param {Object} chord2 - Second chord {root, type}
+ * @param {string} key - Key root
+ * @returns {string|null} Cadence type: 'authentic', 'plagal', 'half', 'deceptive', or null
+ */
+export function identifyCadence(chord1, chord2, key) {
+  const keyPc = noteNameToPitchClass(key);
+  const c1Pc = noteNameToPitchClass(chord1.root);
+  const c2Pc = noteNameToPitchClass(chord2.root);
+
+  // Intervals from key
+  const interval1 = (c1Pc - keyPc + 12) % 12;
+  const interval2 = (c2Pc - keyPc + 12) % 12;
+
+  // V -> I (Authentic cadence)
+  if (interval1 === 7 && interval2 === 0 && chord2.type === 'major') {
+    return chord1.type === '7' || chord1.type === 'major' ? 'authentic' : null;
+  }
+
+  // IV -> I (Plagal cadence)
+  if (interval1 === 5 && interval2 === 0 && chord2.type === 'major') {
+    return 'plagal';
+  }
+
+  // ? -> V (Half cadence - any chord to V)
+  if (interval2 === 7 && chord2.type === 'major') {
+    return 'half';
+  }
+
+  // V -> vi (Deceptive cadence)
+  if (interval1 === 7 && interval2 === 9 && chord2.type === 'minor') {
+    return 'deceptive';
+  }
+
+  return null;
+}
+
+/**
+ * Suggest chord for completing a specific cadence type
+ * @param {Object} currentChord - Current chord {root, type}
+ * @param {string} key - Key root
+ * @param {string} cadenceType - Desired cadence: 'authentic', 'plagal', 'half', 'deceptive'
+ * @returns {Object|null} Suggested next chord or null
+ */
+export function suggestCadence(currentChord, key, cadenceType) {
+  const keyPc = noteNameToPitchClass(key);
+
+  switch (cadenceType) {
+    case 'authentic':
+      // Suggest V7 if not already on V
+      if (noteNameToPitchClass(currentChord.root) !== (keyPc + 7) % 12) {
+        return {
+          root: NOTE_NAMES[(keyPc + 7) % 12],
+          type: '7',
+          description: 'Move to V7 for authentic cadence',
+        };
+      }
+      // Already on V, suggest I
+      return {
+        root: NOTE_NAMES[keyPc],
+        type: 'major',
+        description: 'Resolve to I',
+      };
+
+    case 'plagal':
+      // Suggest IV if not already on IV
+      if (noteNameToPitchClass(currentChord.root) !== (keyPc + 5) % 12) {
+        return {
+          root: NOTE_NAMES[(keyPc + 5) % 12],
+          type: 'major',
+          description: 'Move to IV for plagal cadence',
+        };
+      }
+      return {
+        root: NOTE_NAMES[keyPc],
+        type: 'major',
+        description: 'Resolve to I',
+      };
+
+    case 'half':
+      return {
+        root: NOTE_NAMES[(keyPc + 7) % 12],
+        type: 'major',
+        description: 'End on V (half cadence)',
+      };
+
+    case 'deceptive':
+      // Suggest V first
+      if (noteNameToPitchClass(currentChord.root) !== (keyPc + 7) % 12) {
+        return {
+          root: NOTE_NAMES[(keyPc + 7) % 12],
+          type: 'major',
+          description: 'Move to V for deceptive setup',
+        };
+      }
+      return {
+        root: NOTE_NAMES[(keyPc + 9) % 12],
+        type: 'minor',
+        description: 'Resolve to vi (deceptive)',
+      };
+
+    default:
+      return null;
+  }
+}
+
+/**
+ * Validate if a chord sequence ends with a proper cadence
+ * @param {Object[]} chords - Array of chord objects
+ * @param {string} key - Key root
+ * @returns {{valid: boolean, type: string|null, suggestion: Object|null}}
+ */
+export function validateCadence(chords, key) {
+  if (chords.length < 2) {
+    return { valid: false, type: null, suggestion: null };
+  }
+
+  const lastTwo = chords.slice(-2);
+  const cadenceType = identifyCadence(lastTwo[0], lastTwo[1], key);
+
+  if (cadenceType) {
+    return { valid: true, type: cadenceType, suggestion: null };
+  }
+
+  // No valid cadence, suggest one
+  const suggestion = suggestCadence(lastTwo[1], key, 'authentic');
+  return { valid: false, type: null, suggestion };
+}
+
+// ============================================
+// PARALLEL MOTION DETECTION
+// ============================================
+
+/**
+ * Detect parallel fifths between two voice lines
+ * @param {number[]} voice1 - First voice (array of MIDI notes)
+ * @param {number[]} voice2 - Second voice (array of MIDI notes)
+ * @returns {{detected: boolean, positions: number[]}}
+ */
+export function detectParallelFifths(voice1, voice2) {
+  const positions = [];
+
+  for (let i = 1; i < voice1.length && i < voice2.length; i++) {
+    const prevInterval = Math.abs(voice1[i - 1] - voice2[i - 1]) % 12;
+    const currInterval = Math.abs(voice1[i] - voice2[i]) % 12;
+
+    // Both are perfect fifths (7 semitones)
+    if (prevInterval === 7 && currInterval === 7) {
+      // And moving in the same direction
+      const voice1Dir = Math.sign(voice1[i] - voice1[i - 1]);
+      const voice2Dir = Math.sign(voice2[i] - voice2[i - 1]);
+
+      if (voice1Dir !== 0 && voice1Dir === voice2Dir) {
+        positions.push(i);
+      }
+    }
+  }
+
+  return { detected: positions.length > 0, positions };
+}
+
+/**
+ * Detect parallel octaves between two voice lines
+ * @param {number[]} voice1 - First voice (array of MIDI notes)
+ * @param {number[]} voice2 - Second voice (array of MIDI notes)
+ * @returns {{detected: boolean, positions: number[]}}
+ */
+export function detectParallelOctaves(voice1, voice2) {
+  const positions = [];
+
+  for (let i = 1; i < voice1.length && i < voice2.length; i++) {
+    const prevInterval = Math.abs(voice1[i - 1] - voice2[i - 1]) % 12;
+    const currInterval = Math.abs(voice1[i] - voice2[i]) % 12;
+
+    // Both are unisons/octaves (0 semitones mod 12)
+    if (prevInterval === 0 && currInterval === 0) {
+      const voice1Dir = Math.sign(voice1[i] - voice1[i - 1]);
+      const voice2Dir = Math.sign(voice2[i] - voice2[i - 1]);
+
+      if (voice1Dir !== 0 && voice1Dir === voice2Dir) {
+        positions.push(i);
+      }
+    }
+  }
+
+  return { detected: positions.length > 0, positions };
+}
+
+/**
+ * Check voice leading for common issues
+ * @param {number[]} voice1 - Upper voice (array of MIDI notes)
+ * @param {number[]} voice2 - Lower voice (array of MIDI notes)
+ * @returns {Object} Analysis results
+ */
+export function analyzeVoiceLeading(voice1, voice2) {
+  const fifths = detectParallelFifths(voice1, voice2);
+  const octaves = detectParallelOctaves(voice1, voice2);
+
+  // Check for voice crossing
+  const crossings = [];
+  for (let i = 0; i < voice1.length && i < voice2.length; i++) {
+    if (voice1[i] < voice2[i]) {
+      crossings.push(i);
+    }
+  }
+
+  // Check for large leaps (> octave)
+  const largeLeaps = { voice1: [], voice2: [] };
+  for (let i = 1; i < voice1.length; i++) {
+    if (Math.abs(voice1[i] - voice1[i - 1]) > 12) {
+      largeLeaps.voice1.push(i);
+    }
+  }
+  for (let i = 1; i < voice2.length; i++) {
+    if (Math.abs(voice2[i] - voice2[i - 1]) > 12) {
+      largeLeaps.voice2.push(i);
+    }
+  }
+
+  return {
+    parallelFifths: fifths,
+    parallelOctaves: octaves,
+    voiceCrossings: crossings,
+    largeLeaps,
+    isClean: fifths.positions.length === 0 &&
+             octaves.positions.length === 0 &&
+             crossings.length === 0,
+  };
+}

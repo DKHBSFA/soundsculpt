@@ -1,0 +1,227 @@
+{
+  "style": "electronic",
+  "description": "Energetic synth-driven production with arpeggiated sequences, punchy beats, and layered electronic textures.",
+  "family": "loop",
+
+  "impact_frame": {
+    "enabled": true,
+    "duration_ms": 3000,
+    "layers": {
+      "0ms": {
+        "role": "attention_grabber",
+        "strudel": "stack(s('RolandTR808_bd').struct('t').gain(1.0).room(0.3), note('a1').s('sawtooth').lpf(200).gain(0.9))"
+      },
+      "100ms": {
+        "role": "genre_signifier",
+        "strudel": "s('white').lpf(sine.range(200,8000)).gain(0.6)"
+      },
+      "500ms": {
+        "role": "hook_motif",
+        "strudel": "note('<a3 c4 e4 a4>(3,8)').s('square').lpf(2500).delay(0.3).gain(0.75)"
+      }
+    }
+  },
+
+  "voiceover_mode": {
+    "enabled": false,
+    "layers": {
+      "sub_bed": {
+        "frequency_focus": "below_200hz",
+        "instruments": ["bass", "kick"],
+        "gain": 0.8,
+        "filter": { "lpf": 200 }
+      },
+      "air_bed": {
+        "frequency_focus": "above_4000hz",
+        "instruments": ["hihat", "pad"],
+        "gain": 0.6,
+        "filter": { "hpf": 4000 }
+      },
+      "mid_punctuation": {
+        "frequency_focus": "200hz_4000hz",
+        "instruments": ["arp", "lead"],
+        "gain": 0.25,
+        "sparse": true,
+        "max_events_per_bar": 2
+      }
+    }
+  },
+
+  "temporal": {
+    "bpm": 120,
+    "range": [110, 128],
+    "swing": 0,
+    "timeSignature": [4, 4],
+    "endingBehavior": {
+      "type": "hard_cut",
+      "cadenceBars": 0,
+      "forceTonicLastBar": false,
+      "maxTempoDeviationPercent": 5
+    }
+  },
+
+  "key": "A minor",
+
+  "sounds": {
+    "lead": {
+      "source": "sawtooth",
+      "lpf": 2000,
+      "room": 0.2,
+      "delay": 0.25,
+      "gain": 0.7
+    },
+    "arp": {
+      "source": "square",
+      "lpf": 3000,
+      "room": 0.2,
+      "delay": 0.3,
+      "gain": 0.8
+    },
+    "bass": {
+      "source": "sawtooth",
+      "lpf": 400,
+      "gain": 0.85
+    },
+    "pad": {
+      "source": "sine",
+      "fm": 0.8,
+      "fmh": 1.61,
+      "room": 0.35,
+      "gain": 0.5
+    },
+    "kick": {
+      "source": "bd",
+      "bank": "RolandTR808",
+      "gain": 0.9
+    },
+    "hihat": {
+      "source": "hh",
+      "bank": "RolandTR808",
+      "hpf": 8000,
+      "gain": 0.6
+    }
+  },
+
+  "patterns": {
+    "intro": {
+      "rhythm": "s('RolandTR808_hh').struct('t ~ t/2 ~ t ~ t/2 ~').gain(sine.range(0.3,0.5))",
+      "harmony": "chord('<Am C F G>').voicing().s('sine').fm(0.8).fmh(1.61).room(0.35).gain(0.4).slow(8)",
+      "arp": "note('<a3 c4 e4 a4>(3,8)').s('square').lpf(2000).delay(0.3).gain(0.5)",
+      "bass": "silent"
+    },
+    "build": {
+      "rhythm": "stack(s('RolandTR808_bd').struct('t ~ ~ ~ t ~ ~ ~'), s('RolandTR808_hh').struct('t ~ t ~ t ~ t ~').gain(0.5))",
+      "harmony": "chord('<Am C F G>').voicing().s('sine').fm(0.8).fmh(1.61).room(0.35).gain(0.5).slow(4)",
+      "arp": "note('<a3 c4 e4 a4 e4 c4>(5,8)').s('square').lpf(2500).delay(0.3).gain(0.65)",
+      "bass": "note('<a1 ~ e2 ~ c2 ~ g2 ~>').s('sawtooth').lpf(400).gain(0.75)"
+    },
+    "climax": {
+      "rhythm": "stack(s('RolandTR808_bd').struct('t ~ ~ ~ t ~ ~ ~'), s('RolandTR808_hh').struct('t t t t t t t t').gain(sine.range(0.5,0.8)))",
+      "harmony": "chord('<Am C F G>').voicing().s('sine').fm(0.8).fmh(1.61).room(0.35).gain(0.6).slow(4)",
+      "arp": "note('<a3 c4 e4 a4 e4 c4 a3 c4>(7,8)').s('square').lpf(3000).delay(0.3).gain(0.8)",
+      "bass": "note('<a1 e1 a1 ~ c2 g1 c2 ~>').s('sawtooth').lpf(500).gain(0.85)",
+      "lead": "note('<e5 d5 c5 b4 a4 ~ ~ ~> <a4 c5 e5 d5 c5 a4 ~ ~>').s('sawtooth').lpf(2000).room(0.2).delay(0.25).gain(0.7)"
+    },
+    "resolve": {
+      "rhythm": "s('RolandTR808_hh').struct('t ~ t/2 ~ t ~ ~ ~').gain(perlin.range(0.2,0.4))",
+      "harmony": "chord('<Am>').voicing().s('sine').fm(0.8).fmh(1.61).room(0.4).gain(0.35).slow(4)",
+      "arp": "note('<a3 e4 c4 a3>(3,8)').s('square').lpf(1500).delay(0.3).gain(0.4)",
+      "bass": "silent"
+    }
+  },
+
+  "master": {
+    "compressor": true,
+    "limiter": true
+  },
+
+  "progression": {
+    "chords": ["i", "III", "VI", "VII"],
+    "scale": "natural_minor",
+    "bars_per_chord": 2
+  },
+
+  "harmonic_system": {
+    "type": "timbral_vector",
+    "field": "A minor",
+    "cadences": "none"
+  },
+
+  "arc": {
+    "intro": { "layers": ["pad", "arp"], "velocity": 0.45 },
+    "build": { "layers": ["pad", "arp", "bass", "kick", "hihat"], "velocity": 0.65 },
+    "climax": { "layers": ["pad", "arp", "bass", "kick", "hihat", "lead"], "velocity": 0.85 },
+    "resolve": { "layers": ["pad", "arp"], "velocity": 0.4 }
+  },
+
+  "orchestration_limits": {
+    "intro": { "max_simultaneous_voices": 2 },
+    "build": { "max_simultaneous_voices": 5 },
+    "climax": { "max_simultaneous_voices": 6 },
+    "resolve": { "max_simultaneous_voices": 2 },
+    "hard_limit": 7,
+    "spectral_rule": "If 4+ active voices, at least one must be 'light' (high freq, little low content)"
+  },
+
+  "form": {
+    "type": "drop_structure",
+    "tension_point": "build_to_climax",
+    "release": "rhythmic"
+  },
+
+  "voiceLeading": {
+    "_doc": "Concrete voicings for A minor: i=Am, III=C, VI=F, VII=G",
+    "chords": {
+      "Am": {
+        "root": ["A2", "E3", "A3", "C4", "E4"],
+        "drop2": ["A2", "E3", "C4", "E4", "A4"],
+        "spread": ["A2", "A3", "E4", "C5"]
+      },
+      "C": {
+        "root": ["C3", "G3", "C4", "E4", "G4"],
+        "drop2": ["C3", "G3", "E4", "G4", "C5"],
+        "spread": ["C3", "C4", "G4", "E5"]
+      },
+      "F": {
+        "root": ["F2", "C3", "F3", "A3", "C4"],
+        "drop2": ["F2", "C3", "A3", "C4", "F4"],
+        "spread": ["F2", "F3", "C4", "A4"]
+      },
+      "G": {
+        "root": ["G2", "D3", "G3", "B3", "D4"],
+        "drop2": ["G2", "D3", "B3", "D4", "G4"],
+        "spread": ["G2", "G3", "D4", "B4"]
+      }
+    },
+    "transitions": {
+      "Am_to_C": { "motion": "ascending third, top voices move +3 semitones" },
+      "C_to_F": { "motion": "ascending fourth, bass drops to F, inner voices shift minimally" },
+      "F_to_G": { "motion": "ascending step, all voices move +2 semitones" },
+      "G_to_Am": { "motion": "descending step, B resolves to C then A, smooth contrary motion" }
+    },
+    "arc_voicing": {
+      "intro": "spread",
+      "build": "drop2",
+      "climax": "root",
+      "resolve": "spread"
+    }
+  },
+
+  "transitions": {
+    "intro_to_build": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "s('white').gain(perlin.range(0.1,0.6)).lpf(sine.range(200,4000))"
+    },
+    "build_to_climax": {
+      "type": "riser",
+      "bars_before": 1,
+      "strudel": "stack(s('RolandTR909_sd').struct('t*16').gain(perlin.range(0.3,0.9)), s('white').gain(0.4).lpf(sine.range(1000,8000)))"
+    },
+    "climax_to_resolve": {
+      "type": "drop",
+      "bars_before": 0.5,
+      "strudel": "s('RolandTR808_bd').struct('t ~ ~ ~').room(0.6).gain(0.3)"
+    }
+  }
+}
