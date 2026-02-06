@@ -18,8 +18,31 @@ export class SequencerView {
     this.steps = DEFAULT_STEPS;
     this.currentStep = -1;
     this.isPlaying = false;
+    this.viewName = 'sequencer';
+    this.renderPending = false;
 
     this.init();
+  }
+
+  /**
+   * Check if this view is currently visible
+   */
+  isVisible() {
+    return state.get('currentView') === this.viewName;
+  }
+
+  /**
+   * Schedule a render if visible, debounced
+   */
+  scheduleRender() {
+    if (!this.isVisible() || this.renderPending) return;
+    this.renderPending = true;
+    requestAnimationFrame(() => {
+      this.renderPending = false;
+      if (this.isVisible()) {
+        this.render();
+      }
+    });
   }
 
   /**
@@ -184,16 +207,16 @@ export class SequencerView {
    * Setup event bus listeners
    */
   setupEventBusListeners() {
-    // Voice changes
-    eventBus.on(Events.VOICE_ADD, () => this.render());
-    eventBus.on(Events.VOICE_REMOVE, () => this.render());
-    eventBus.on(Events.VOICE_UPDATE, () => this.render());
-    eventBus.on(Events.VOICE_MUTE, () => this.render());
-    eventBus.on(Events.VOICE_SOLO, () => this.render());
-    eventBus.on(Events.VOICE_SELECT, () => this.render());
+    // Voice changes - only render if visible
+    eventBus.on(Events.VOICE_ADD, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_REMOVE, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_UPDATE, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_MUTE, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_SOLO, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_SELECT, () => this.scheduleRender());
 
-    // Note changes
-    eventBus.on(Events.NOTE_UPDATE, () => this.render());
+    // Note changes - only render if visible
+    eventBus.on(Events.NOTE_UPDATE, () => this.scheduleRender());
 
     // Transport changes
     eventBus.on(Events.TRANSPORT_PLAY, () => {
@@ -216,14 +239,37 @@ export class SequencerView {
       this.isPlaying = false;
     });
 
-    // Playhead update
+    // Playhead update - only update if visible
     eventBus.on(Events.PLAYHEAD_UPDATE, (beat) => {
-      this.updatePlayhead(beat);
+      if (this.isVisible()) {
+        this.updatePlayhead(beat);
+      }
     });
 
-    // Project load
+    // Project load - always render (major state change)
     eventBus.on(Events.PROJECT_LOAD, () => this.render());
     eventBus.on(Events.PROJECT_NEW, () => this.render());
+
+    // View change - render when becoming visible
+    eventBus.on(Events.VIEW_CHANGE, (viewName) => {
+      if (viewName === this.viewName) {
+        this.render();
+        this.scrollToSelectedVoice();
+      }
+    });
+  }
+
+  /**
+   * Scroll to make selected voice visible
+   */
+  scrollToSelectedVoice() {
+    const selectedId = state.get('selectedVoiceId');
+    if (!selectedId) return;
+
+    const selectedRow = this.container.querySelector(`.sequencer-row[data-voice-id="${selectedId}"]`);
+    if (selectedRow) {
+      selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   /**

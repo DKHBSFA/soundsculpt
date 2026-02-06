@@ -91,6 +91,8 @@ export class ScoreView {
     this.zoom = 1;
     this.currentBeat = 0;
     this.isPlaying = false;
+    this.viewName = 'score';
+    this.renderPending = false;
 
     // VexFlow instances
     this.vf = null;
@@ -105,6 +107,27 @@ export class ScoreView {
     this.renderedNotes = [];
 
     this.init();
+  }
+
+  /**
+   * Check if this view is currently visible
+   */
+  isVisible() {
+    return state.get('currentView') === this.viewName;
+  }
+
+  /**
+   * Schedule a render if visible, debounced
+   */
+  scheduleRender() {
+    if (!this.isVisible() || this.renderPending) return;
+    this.renderPending = true;
+    requestAnimationFrame(() => {
+      this.renderPending = false;
+      if (this.isVisible()) {
+        this.render();
+      }
+    });
   }
 
   /**
@@ -414,12 +437,13 @@ export class ScoreView {
               const x = LEFT_MARGIN + (note.startBeat / this.beatsPerMeasure) * MEASURE_WIDTH * this.zoom;
               const pitch = note.pitch % 12;
               const noteY = 60 - pitch * 3;
-              return `<div class="fallback-note"
+              const isSelected = note.id === this.selectedNoteId && voice.id === this.selectedVoiceId;
+              return `<div class="fallback-note ${isSelected ? 'selected' : ''}"
                            style="left: ${x}px; top: ${noteY}px; width: ${note.durationBeats * 20}px;
                                   background: ${voice.color};"
                            data-voice-id="${voice.id}"
                            data-note-id="${note.id}"
-                           title="${midiToNoteName(note.pitch)}"></div>`;
+                           title="${midiToNoteName(note.pitch)}${isSelected ? ' (click again to delete)' : ''}"></div>`;
             }).join('')}
           </div>
         </div>
@@ -454,14 +478,17 @@ export class ScoreView {
       if (e.target.id === 'score-zoom-in') {
         this.zoom = Math.min(this.zoom * 1.25, 3);
         this.render();
+        return;
       } else if (e.target.id === 'score-zoom-out') {
         this.zoom = Math.max(this.zoom / 1.25, 0.5);
         this.render();
+        return;
       }
 
       // Export button
       if (e.target.id === 'score-export-xml') {
         this.exportMusicXML();
+        return;
       }
 
       // Voice selection from legend
@@ -469,37 +496,48 @@ export class ScoreView {
       if (legendVoice) {
         const voiceId = legendVoice.dataset.voiceId;
         state.selectVoice(voiceId);
-      }
-
-      // Note selection (fallback mode)
-      const fallbackNote = e.target.closest('.fallback-note');
-      if (fallbackNote) {
-        this.selectedNoteId = fallbackNote.dataset.noteId;
-        this.selectedVoiceId = fallbackNote.dataset.voiceId;
-        this.render();
-      }
-    });
-
-    // Click on SVG to add notes (when VexFlow is loaded)
-    this.container.addEventListener('dblclick', (e) => {
-      const svgContainer = e.target.closest('#score-svg-container');
-      if (!svgContainer) return;
-
-      // Check for fallback note deletion
-      const fallbackNote = e.target.closest('.fallback-note');
-      if (fallbackNote) {
-        const voiceId = fallbackNote.dataset.voiceId;
-        const noteId = fallbackNote.dataset.noteId;
-        const command = new DeleteNoteCommand(state, voiceId, noteId);
-        history.execute(command);
         return;
       }
 
-      // Try to add note at click position
+      // Handle clicks in the score SVG container
+      const svgContainer = e.target.closest('#score-svg-container');
+      if (!svgContainer) return;
+
+      // Note handling (fallback mode)
+      const fallbackNote = e.target.closest('.fallback-note');
+      if (fallbackNote) {
+        const noteId = fallbackNote.dataset.noteId;
+        const voiceId = fallbackNote.dataset.voiceId;
+
+        // If clicking on already selected note, delete it
+        if (this.selectedNoteId === noteId && this.selectedVoiceId === voiceId) {
+          const command = new DeleteNoteCommand(state, voiceId, noteId);
+          history.execute(command);
+          this.selectedNoteId = null;
+          this.selectedVoiceId = null;
+        } else {
+          // Select the note
+          this.selectedNoteId = noteId;
+          this.selectedVoiceId = voiceId;
+          this.render();
+        }
+        return;
+      }
+
+      // Single click on empty space - add note
       const rect = svgContainer.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
+      // Deselect any selected note when clicking empty space
+      if (this.selectedNoteId) {
+        this.selectedNoteId = null;
+        this.selectedVoiceId = null;
+        this.render();
+        return;
+      }
+
+      // Add note at click position
       this.handleScoreClick(x, y);
     });
 
@@ -533,23 +571,46 @@ export class ScoreView {
     const voiceIndex = voices.findIndex(v => v.id === selectedVoiceId);
     if (voiceIndex === -1) return;
 
-    // Calculate beat from x position
-    const beatOffset = (x - LEFT_MARGIN) / (MEASURE_WIDTH * this.zoom);
-    if (beatOffset < 0 || beatOffset > this.totalBeats / this.beatsPerMeasure * this.beatsPerMeasure) return;
+    // Calculate beat from x position (accounting for clef width on first measure)
+    const clefOffset = x > LEFT_MARGIN + CLEF_WIDTH + 30 ? 0 : CLEF_WIDTH + 30;
+    const effectiveX = x - clefOffset;
+    const beatOffset = (effectiveX - LEFT_MARGIN) / (MEASURE_WIDTH * this.zoom) * this.beatsPerMeasure;
 
-    const startBeat = Math.max(0, Math.round(beatOffset * 4) / 4); // Quantize to 1/4 beat
+    if (beatOffset < 0 || beatOffset > this.totalBeats) return;
 
-    // Calculate pitch from y position
+    // Quantize to 1/4 beat grid
+    const startBeat = Math.max(0, Math.round(beatOffset * 4) / 4);
+
+    // Calculate pitch from y position using staff line mapping
+    // Staff center is approximately at staffTop + 60 (middle of staff)
     const staffTop = TOP_MARGIN + voiceIndex * STAFF_HEIGHT;
-    const relativeY = y - staffTop - 20;
+    const staffCenter = staffTop + 60; // Middle line of staff
+    const relativeY = y - staffCenter;
 
-    // Map y position to MIDI pitch (rough approximation)
-    // Staff lines typically span about 2 octaves
-    const pitchOffset = Math.round(-relativeY / 5);
-    const pitch = 60 + pitchOffset; // Middle C = 60
+    // Each staff position is about 5px apart (line to space)
+    // B4 (71) is on the middle line of treble clef
+    // D3 (50) is on the middle line of bass clef
+    // Determine clef based on average pitch of voice's notes
+    const voice = voices[voiceIndex];
+    const existingNotes = voice?.content?.notes || [];
+    const avgPitch = existingNotes.length > 0
+      ? existingNotes.reduce((sum, n) => sum + n.pitch, 0) / existingNotes.length
+      : 60;
+    const isBassClef = avgPitch < 55;
+
+    // Reference pitch: middle line = B4 (71) for treble, D3 (50) for bass
+    const referencePitch = isBassClef ? 50 : 71;
+    // Each step is 5px, each step is a scale degree (not semitone)
+    // Convert y offset to scale steps, then to semitones
+    const stepsFromCenter = Math.round(-relativeY / 5);
+
+    // Map scale steps to semitones (diatonic: 2 2 1 2 2 2 1 pattern from C)
+    // Simplified: use chromatic mapping for now, but prefer scale notes
+    const semitoneOffset = Math.round(stepsFromCenter * 12 / 7); // Approximate diatonic
+    const pitch = referencePitch + semitoneOffset;
 
     // Clamp pitch to reasonable range
-    const clampedPitch = Math.max(36, Math.min(84, pitch));
+    const clampedPitch = Math.max(36, Math.min(96, pitch));
 
     // Add the note
     const command = new AddNoteCommand(state, selectedVoiceId, {
@@ -559,20 +620,27 @@ export class ScoreView {
       velocity: 100,
     });
     history.execute(command);
+
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: `Added note ${midiToNoteName(clampedPitch)} at beat ${startBeat + 1}`,
+      type: 'info'
+    });
   }
 
   /**
    * Setup event bus listeners
    */
   setupEventBusListeners() {
-    eventBus.on(Events.VOICE_ADD, () => this.render());
-    eventBus.on(Events.VOICE_REMOVE, () => this.render());
-    eventBus.on(Events.VOICE_UPDATE, () => this.render());
-    eventBus.on(Events.VOICE_SELECT, () => this.render());
+    // Voice changes - only render if visible (VexFlow is expensive)
+    eventBus.on(Events.VOICE_ADD, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_REMOVE, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_UPDATE, () => this.scheduleRender());
+    eventBus.on(Events.VOICE_SELECT, () => this.scheduleRender());
 
-    eventBus.on(Events.NOTE_ADD, () => this.render());
-    eventBus.on(Events.NOTE_REMOVE, () => this.render());
-    eventBus.on(Events.NOTE_UPDATE, () => this.render());
+    // Note changes - only render if visible
+    eventBus.on(Events.NOTE_ADD, () => this.scheduleRender());
+    eventBus.on(Events.NOTE_REMOVE, () => this.scheduleRender());
+    eventBus.on(Events.NOTE_UPDATE, () => this.scheduleRender());
 
     eventBus.on(Events.TRANSPORT_PLAY, () => {
       this.isPlaying = true;
@@ -594,12 +662,23 @@ export class ScoreView {
       this.isPlaying = false;
     });
 
+    // Playhead update - only update if visible
     eventBus.on(Events.PLAYHEAD_UPDATE, (beat) => {
-      this.updatePlayhead(beat);
+      if (this.isVisible()) {
+        this.updatePlayhead(beat);
+      }
     });
 
+    // Project load - always render (major state change)
     eventBus.on(Events.PROJECT_LOAD, () => this.render());
     eventBus.on(Events.PROJECT_NEW, () => this.render());
+
+    // View change - render when becoming visible
+    eventBus.on(Events.VIEW_CHANGE, (viewName) => {
+      if (viewName === this.viewName) {
+        this.render();
+      }
+    });
   }
 
   /**

@@ -3,10 +3,21 @@
  * Phase 6: Generation (AI/Preset) functionality
  *
  * Creates voices with patterns based on selected style and parameters.
+ * Uses music-theory.js for procedural melodic generation.
  */
 
 import { state } from './state.js';
 import { eventBus, Events } from './event-bus.js';
+import {
+  getScalePitchClasses,
+  noteNameToPitchClass,
+  pitchClassToNoteName,
+  getChordMidi,
+  getDiatonicChords,
+  generateArpSequence,
+  SCALES,
+  CHORDS,
+} from './music-theory.js';
 
 // === Pattern Parsing ===
 
@@ -165,6 +176,270 @@ function generateEuclideanRhythm(hits, slots, totalSteps) {
     steps[i] = pattern[srcIndex];
   }
   return steps;
+}
+
+// ============================================
+// PROCEDURAL MELODY GENERATION
+// ============================================
+
+/**
+ * Parse key string like "A minor" to root and scale type
+ * @param {string} keyStr - e.g., "A minor", "C major", "F# minor"
+ * @returns {{ root: string, scaleType: string }}
+ */
+function parseKeyString(keyStr) {
+  const match = keyStr.match(/^([A-G][#b]?)\s*(major|minor)?$/i);
+  if (!match) return { root: 'C', scaleType: 'major' };
+  return {
+    root: match[1].charAt(0).toUpperCase() + match[1].slice(1),
+    scaleType: match[2]?.toLowerCase() || 'major',
+  };
+}
+
+/**
+ * Generate a melodic line procedurally based on scale and rhythm
+ * @param {string} root - Scale root note
+ * @param {string} scaleType - Scale type
+ * @param {number} baseOctave - Base MIDI octave (e.g., 4 for middle range)
+ * @param {boolean[]} rhythmPattern - When to trigger notes
+ * @param {string} melodicStyle - 'arp', 'stepwise', 'chord', 'bass'
+ * @param {object} options - Additional options
+ * @returns {{ notes: object[], midiNotes: number[] }}
+ */
+function generateMelody(root, scaleType, baseOctave, rhythmPattern, melodicStyle, options = {}) {
+  const scalePcs = getScalePitchClasses(root, scaleType);
+  const rootPc = noteNameToPitchClass(root);
+  const baseNote = (baseOctave + 1) * 12 + rootPc; // MIDI note at base octave
+
+  // Convert scale to MIDI notes in the target range
+  const scaleNotes = scalePcs.map(pc => {
+    let midi = (baseOctave + 1) * 12 + pc;
+    // Ensure notes are above the root
+    if (pc < rootPc) midi += 12;
+    return midi;
+  });
+
+  const notes = [];
+  const midiNotes = [];
+  let prevPitch = baseNote;
+  let direction = 1;
+
+  // Get chord tones for harmonic awareness
+  const chordPcs = [scalePcs[0], scalePcs[2], scalePcs[4]]; // 1, 3, 5 of scale
+
+  for (let i = 0; i < rhythmPattern.length; i++) {
+    if (!rhythmPattern[i]) continue;
+
+    let pitch;
+    const beatInBar = i % 4;
+
+    switch (melodicStyle) {
+      case 'arp':
+        // Arpeggiate through chord tones
+        const arpIndex = notes.length % chordPcs.length;
+        const arpOctaveOffset = Math.floor(notes.length / chordPcs.length) % (options.octaves || 2);
+        pitch = (baseOctave + 1 + arpOctaveOffset) * 12 + chordPcs[arpIndex];
+        break;
+
+      case 'stepwise':
+        // Move by scale steps, mostly conjunct motion
+        if (notes.length === 0) {
+          pitch = baseNote;
+        } else {
+          const currentIndex = scaleNotes.indexOf(prevPitch);
+          if (currentIndex !== -1) {
+            // Decide direction: tend to reverse at extremes
+            if (prevPitch >= baseNote + 12) direction = -1;
+            if (prevPitch <= baseNote - 5) direction = 1;
+            // Occasionally change direction
+            if (Math.random() < 0.3) direction *= -1;
+
+            const newIndex = Math.max(0, Math.min(scaleNotes.length - 1, currentIndex + direction));
+            pitch = scaleNotes[newIndex];
+            // Allow octave jumps occasionally
+            if (Math.random() < 0.2) {
+              pitch += direction * 12;
+            }
+          } else {
+            // Snap to nearest scale note
+            pitch = scaleNotes.reduce((a, b) =>
+              Math.abs(b - prevPitch) < Math.abs(a - prevPitch) ? b : a
+            );
+          }
+        }
+        // On strong beats, prefer chord tones
+        if (beatInBar === 0 && Math.random() < 0.7) {
+          const chordNote = (baseOctave + 1) * 12 + chordPcs[Math.floor(Math.random() * chordPcs.length)];
+          if (Math.abs(chordNote - pitch) <= 4) pitch = chordNote;
+        }
+        break;
+
+      case 'bass':
+        // Root-fifth patterns with occasional chromatic approach
+        if (beatInBar === 0) {
+          pitch = baseNote; // Root on beat 1
+        } else if (beatInBar === 2) {
+          pitch = baseNote + 7; // Fifth
+        } else {
+          // Passing tones
+          const passingOptions = [baseNote, baseNote + 7, baseNote + 5, baseNote + 3];
+          pitch = passingOptions[Math.floor(Math.random() * passingOptions.length)];
+        }
+        // Keep bass in low range
+        while (pitch > baseNote + 12) pitch -= 12;
+        while (pitch < baseNote - 12) pitch += 12;
+        break;
+
+      case 'chord':
+        // Play full chord on each trigger (for pad-style)
+        const chordMidi = chordPcs.map(pc => (baseOctave + 1) * 12 + pc);
+        pitch = chordMidi[notes.length % chordMidi.length];
+        break;
+
+      default:
+        pitch = scaleNotes[notes.length % scaleNotes.length];
+    }
+
+    // Clamp to reasonable range
+    pitch = Math.max(36, Math.min(96, pitch));
+
+    // Determine duration based on next note
+    let duration = 1;
+    for (let j = i + 1; j < Math.min(i + 4, rhythmPattern.length); j++) {
+      if (rhythmPattern[j]) break;
+      duration++;
+    }
+    if (options.shortNotes) duration = Math.min(duration, 0.5);
+
+    notes.push({
+      id: `gen-${Date.now()}-${i}`,
+      pitch,
+      startBeat: i,
+      durationBeats: Math.min(duration, 4),
+      velocity: 80 + Math.floor(Math.random() * 40), // 80-120
+    });
+
+    midiNotes.push(pitch);
+    prevPitch = pitch;
+  }
+
+  return { notes, midiNotes };
+}
+
+/**
+ * Generate a chord progression
+ * @param {string} root - Scale root
+ * @param {string} scaleType - Scale type
+ * @param {number} bars - Number of bars
+ * @param {string} progressionStyle - 'pop', 'jazz', 'minimal'
+ * @returns {string[]} Array of chord symbols
+ */
+function generateChordProgression(root, scaleType, bars, progressionStyle) {
+  const diatonic = getDiatonicChords(root, scaleType);
+
+  // Common progressions by style
+  const progressions = {
+    pop: [
+      [1, 5, 6, 4],    // I-V-vi-IV
+      [1, 4, 5, 4],    // I-IV-V-IV
+      [6, 4, 1, 5],    // vi-IV-I-V
+      [1, 6, 4, 5],    // I-vi-IV-V
+    ],
+    jazz: [
+      [2, 5, 1, 1],    // ii-V-I
+      [1, 6, 2, 5],    // I-vi-ii-V
+      [3, 6, 2, 5],    // iii-vi-ii-V
+      [1, 4, 3, 6],    // I-IV-iii-vi
+    ],
+    minimal: [
+      [1, 1, 4, 4],    // I-I-IV-IV
+      [1, 4, 1, 4],    // I-IV-I-IV
+      [6, 6, 4, 4],    // vi-vi-IV-IV
+      [1, 5, 1, 5],    // I-V-I-V
+    ],
+  };
+
+  const styleProgressions = progressions[progressionStyle] || progressions.pop;
+  const selectedProgression = styleProgressions[Math.floor(Math.random() * styleProgressions.length)];
+
+  // Expand to fill bars
+  const chords = [];
+  for (let bar = 0; bar < bars; bar++) {
+    const degree = selectedProgression[bar % selectedProgression.length];
+    const chord = diatonic[degree - 1];
+    if (chord) {
+      chords.push(chord.symbol);
+    } else {
+      chords.push(root);
+    }
+  }
+
+  return chords;
+}
+
+/**
+ * Generate procedural voice data based on voice type and style
+ * @param {object} voiceConfig - Voice configuration from style
+ * @param {string} key - Key string (e.g., "A minor")
+ * @param {number} energy - Energy level 0-100
+ * @returns {object} Generated voice data with steps and notes
+ */
+function generateProceduralVoice(voiceConfig, key, energy) {
+  const { root, scaleType } = parseKeyString(key);
+  const name = voiceConfig.name.toLowerCase();
+
+  // Determine voice characteristics
+  let melodicStyle = 'stepwise';
+  let baseOctave = 4;
+  let rhythmDensity = 4; // hits per 8 steps
+
+  if (name.includes('bass') || name.includes('808') || name.includes('sub')) {
+    melodicStyle = 'bass';
+    baseOctave = 2;
+    rhythmDensity = Math.floor(2 + (energy / 50));
+  } else if (name.includes('arp') || name.includes('lead') || name.includes('synth')) {
+    melodicStyle = 'arp';
+    baseOctave = 4;
+    rhythmDensity = Math.floor(4 + (energy / 25));
+  } else if (name.includes('pad') || name.includes('string') || name.includes('chord')) {
+    melodicStyle = 'chord';
+    baseOctave = 3;
+    rhythmDensity = Math.floor(2 + (energy / 100));
+  } else if (name.includes('piano')) {
+    melodicStyle = Math.random() > 0.5 ? 'arp' : 'stepwise';
+    baseOctave = 3;
+    rhythmDensity = Math.floor(3 + (energy / 30));
+  }
+
+  // Generate rhythm pattern
+  const totalSteps = 16;
+  rhythmDensity = Math.max(2, Math.min(12, rhythmDensity));
+  const steps = generateEuclideanRhythm(rhythmDensity, totalSteps, totalSteps);
+
+  // Adjust for energy - at low energy, thin out the pattern
+  if (energy < 40) {
+    for (let i = 0; i < steps.length; i++) {
+      if (steps[i] && Math.random() > energy / 40) {
+        steps[i] = false;
+      }
+    }
+  }
+
+  // Generate melodic content
+  const { notes, midiNotes } = generateMelody(
+    root,
+    scaleType,
+    baseOctave,
+    steps,
+    melodicStyle,
+    { octaves: melodicStyle === 'arp' ? 2 : 1, shortNotes: energy > 70 }
+  );
+
+  return {
+    steps,
+    notes,
+    melodicNotes: midiNotes,
+  };
 }
 
 // === Style Definitions (20 styles from audiosculpt presets) ===
@@ -518,15 +793,13 @@ export function generate() {
     // Adjust pattern based on energy
     let patternCode = voiceData.pattern;
 
-    // Apply energy adjustments
+    // Apply energy adjustments to gain
     if (energyLevel < 50) {
-      // Lower energy: reduce gain, add more space
       patternCode = patternCode.replace(/\.gain\([\d.]+\)/g, (match) => {
         const originalGain = parseFloat(match.match(/[\d.]+/)[0]);
         return `.gain(${(originalGain * energyMultiplier).toFixed(2)})`;
       });
     } else if (energyLevel > 75) {
-      // Higher energy: boost gain slightly
       patternCode = patternCode.replace(/\.gain\([\d.]+\)/g, (match) => {
         const originalGain = parseFloat(match.match(/[\d.]+/)[0]);
         const boosted = Math.min(1, originalGain * 1.15);
@@ -534,15 +807,23 @@ export function generate() {
       });
     }
 
-    // Parse pattern to generate sequencer steps
-    const steps = parsePatternToSteps(patternCode, 16);
-
-    // Check if melodic and parse notes
+    // Check if melodic pattern
     const isMelodic = isMelodicPattern(patternCode);
-    const melodicNotes = isMelodic ? parseNotesFromPattern(patternCode) : [];
 
-    // Generate note objects for Piano Roll and Score
-    const noteObjects = isMelodic ? generateNoteObjects(steps, melodicNotes) : [];
+    let steps, noteObjects, melodicNotes;
+
+    if (isMelodic) {
+      // Use PROCEDURAL GENERATION for melodic voices
+      const proceduralData = generateProceduralVoice(voiceData, style.key, energyLevel);
+      steps = proceduralData.steps;
+      noteObjects = proceduralData.notes;
+      melodicNotes = proceduralData.melodicNotes;
+    } else {
+      // Use original parsing for drum/percussion patterns
+      steps = parsePatternToSteps(patternCode, 16);
+      melodicNotes = [];
+      noteObjects = [];
+    }
 
     const voice = state.addVoice({
       name: voiceData.name,
@@ -552,8 +833,8 @@ export function generate() {
       patternCode: patternCode,
       content: {
         steps: steps,
-        notes: noteObjects, // Note objects for Piano Roll and Score
-        melodicNotes: melodicNotes, // MIDI notes to cycle through for playback
+        notes: noteObjects,
+        melodicNotes: melodicNotes,
       },
     });
 

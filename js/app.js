@@ -15,6 +15,7 @@ import { createPianoRollView } from './views/piano-roll.js';
 import { createScoreView } from './views/score.js';
 import { createPatchEditorView } from './views/patch-editor.js';
 import { createCodeEditorView } from './views/code-editor.js';
+import { patchManager } from './audio/patch-runtime.js';
 import {
   saveProject,
   openFileDialog,
@@ -44,6 +45,7 @@ import { initA11yKeyboard } from './keyboard-a11y.js';
 import { sessionRecorder } from './session/recorder.js';
 import { sessionPlayer } from './session/player.js';
 import { initSessionControls } from './ui/session-controls.js';
+import { settingsModal } from './ui/settings.js';
 
 // === DOM Elements ===
 const elements = {
@@ -130,6 +132,37 @@ let patchEditorView = null;
 let codeEditorView = null;
 let meterAnimationId = null;
 
+// === Theme Toggle ===
+
+/**
+ * Initialize theme toggle functionality
+ */
+function initThemeToggle() {
+  const toggle = document.querySelector('[data-theme-toggle]');
+  if (!toggle) return;
+
+  // Check saved preference or system preference
+  const savedTheme = localStorage.getItem('soundsculpt-theme');
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+  document.documentElement.setAttribute('data-theme', initialTheme);
+
+  toggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('soundsculpt-theme', newTheme);
+  });
+
+  // Listen for system preference changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('soundsculpt-theme')) {
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    }
+  });
+}
+
 // === Initialization ===
 
 /**
@@ -137,6 +170,9 @@ let meterAnimationId = null;
  */
 async function init() {
   console.log('SoundSculpt initializing...');
+
+  // Initialize theme toggle early to prevent flash
+  initThemeToggle();
 
   // Setup persistence
   setupDragDrop();
@@ -198,6 +234,17 @@ async function init() {
     if (sequencerView) {
       const activeVoices = sequencerView.getActiveStepsAtBeat(stepIndex);
       synthEngine.triggerStep(activeVoices, stepIndex, time);
+
+      // Trigger patch ADSR envelopes for patch voices (BUG-005 fix)
+      for (const voiceId of activeVoices) {
+        const voice = state.getVoice(voiceId);
+        if (voice?.sourceType === 'patch') {
+          const runtime = patchManager.runtimes.get(voiceId);
+          if (runtime) {
+            runtime.triggerNote(time);
+          }
+        }
+      }
     }
   });
 
@@ -218,6 +265,9 @@ async function init() {
 
   // Initialize chord palette (Fase 8)
   chordPalette.init();
+
+  // Initialize settings modal (BUG-006 fix)
+  settingsModal.init();
 
   // Initialize MIDI (Fase 9)
   if (midiManager.checkSupport()) {
@@ -297,8 +347,8 @@ function setupEventListeners() {
   // Loop toggle
   elements.loopCheckbox?.addEventListener('change', toggleLoop);
 
-  // Add voice button
-  elements.btnAddVoice?.addEventListener('click', () => addVoice());
+  // Add voice button - show type picker
+  elements.btnAddVoice?.addEventListener('click', () => showVoiceTypePicker());
 
   // Menu buttons
   elements.menuBtns.forEach((btn) => {
@@ -431,6 +481,56 @@ function setupEventBusListeners() {
       playNote(voiceId, note, null, 0.3, velocity / 127);
     }
   });
+
+  // === Patch Runtime Integration (BUG-005 fix) ===
+
+  // Build patches when project loads
+  eventBus.on(Events.PROJECT_LOAD, () => {
+    buildVoicePatches();
+  });
+
+  // Rebuild patch when voice updates (patch changed in editor)
+  eventBus.on(Events.VOICE_UPDATE, (voiceId) => {
+    const voice = state.getVoice(voiceId);
+    if (voice?.sourceType === 'patch' && voice.content?.patch) {
+      patchManager.buildPatch(voiceId, voice.content.patch);
+    }
+  });
+
+  // Start patches on transport play
+  eventBus.on(Events.TRANSPORT_PLAY, () => {
+    const voices = state.get('voices') || [];
+    for (const voice of voices) {
+      if (voice.sourceType === 'patch' && voice.content?.patch) {
+        patchManager.buildPatch(voice.id, voice.content.patch);
+        patchManager.startPatch(voice.id);
+      }
+    }
+  });
+
+  // Stop patches on transport stop
+  eventBus.on(Events.TRANSPORT_STOP, () => {
+    const voices = state.get('voices') || [];
+    for (const voice of voices) {
+      if (voice.sourceType === 'patch') {
+        patchManager.stopPatch(voice.id);
+      }
+    }
+  });
+}
+
+// === Patch Integration (BUG-005 fix) ===
+
+/**
+ * Build patches for all voices with sourceType 'patch'
+ */
+function buildVoicePatches() {
+  const voices = state.get('voices') || [];
+  for (const voice of voices) {
+    if (voice.sourceType === 'patch' && voice.content?.patch) {
+      patchManager.buildPatch(voice.id, voice.content.patch);
+    }
+  }
 }
 
 // === Actions ===
@@ -584,6 +684,133 @@ function updateViewTabs(viewName) {
   elements.viewTabs.forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.view === viewName);
   });
+}
+
+// Voice type presets organized by category
+const VOICE_CATEGORIES = [
+  { id: 'drums', name: 'Drum Machines' },
+  { id: 'synths', name: 'Synthesizers' },
+  { id: 'instruments', name: 'Instruments' },
+  { id: 'oscillators', name: 'Oscillators' },
+  { id: 'noise', name: 'Noise' },
+  { id: 'other', name: 'Other' },
+];
+
+const VOICE_TYPES = [
+  // Drums
+  { id: 'drums-808', name: 'TR-808', icon: '🥁', category: 'drums', sourceType: 'drum', drumKit: '808', description: 'Classic 808' },
+  { id: 'drums-909', name: 'TR-909', icon: '🪘', category: 'drums', sourceType: 'drum', drumKit: '909', description: 'Classic 909' },
+  { id: 'drums-606', name: 'TR-606', icon: '🎛️', category: 'drums', sourceType: 'drum', drumKit: '606', description: 'Analog 606' },
+  { id: 'drums-jazz', name: 'Jazz Kit', icon: '🎷', category: 'drums', sourceType: 'drum', drumKit: 'jazz', description: 'Brush & ride' },
+  // Synths
+  { id: 'bass', name: 'Bass', icon: '🎸', category: 'synths', sourceType: 'synth', synthPreset: 'bass', description: 'Sub bass' },
+  { id: 'lead', name: 'Lead', icon: '🎹', category: 'synths', sourceType: 'synth', synthPreset: 'lead', description: 'Melodic lead' },
+  { id: 'pad', name: 'Pad', icon: '🌊', category: 'synths', sourceType: 'synth', synthPreset: 'pad', description: 'Atmospheric' },
+  { id: 'arp', name: 'Arp', icon: '✨', category: 'synths', sourceType: 'synth', synthPreset: 'arp', description: 'Arpeggios' },
+  { id: 'pluck', name: 'Pluck', icon: '🪕', category: 'synths', sourceType: 'synth', synthPreset: 'pluck', description: 'Plucked string' },
+  // Instruments
+  { id: 'piano', name: 'Piano', icon: '🎹', category: 'instruments', sourceType: 'synth', synthPreset: 'piano', description: 'Keys' },
+  { id: 'strings', name: 'Strings', icon: '🎻', category: 'instruments', sourceType: 'synth', synthPreset: 'strings', description: 'Orchestra' },
+  { id: 'brass', name: 'Brass', icon: '🎺', category: 'instruments', sourceType: 'synth', synthPreset: 'brass', description: 'Horns' },
+  // Oscillators
+  { id: 'sine', name: 'Sine', icon: '〰️', category: 'oscillators', sourceType: 'synth', synthPreset: 'sine', description: 'Pure tone' },
+  { id: 'saw', name: 'Sawtooth', icon: '⚡', category: 'oscillators', sourceType: 'synth', synthPreset: 'sawtooth', description: 'Bright, buzzy' },
+  { id: 'square', name: 'Square', icon: '⬜', category: 'oscillators', sourceType: 'synth', synthPreset: 'square', description: 'Hollow, retro' },
+  { id: 'triangle', name: 'Triangle', icon: '🔺', category: 'oscillators', sourceType: 'synth', synthPreset: 'triangle', description: 'Soft, mellow' },
+  // Noise
+  { id: 'white-noise', name: 'White', icon: '📻', category: 'noise', sourceType: 'synth', synthPreset: 'white', description: 'White noise' },
+  { id: 'pink-noise', name: 'Pink', icon: '🌸', category: 'noise', sourceType: 'synth', synthPreset: 'pink', description: 'Pink noise' },
+  // Other
+  { id: 'sample', name: 'Sample', icon: '🎧', category: 'other', sourceType: 'sample', description: 'Audio file' },
+  { id: 'patch', name: 'Patch', icon: '🔌', category: 'other', sourceType: 'patch', description: 'Visual patching' },
+];
+
+let voicePickerEl = null;
+
+/**
+ * Render voice types grouped by category
+ */
+function renderVoicePickerSections() {
+  return VOICE_CATEGORIES.map(cat => {
+    const items = VOICE_TYPES.filter(t => t.category === cat.id);
+    if (items.length === 0) return '';
+    return `
+      <div class="voice-picker-section">
+        <div class="voice-picker-section-title">${cat.name}</div>
+        <div class="voice-picker-grid">
+          ${items.map(t => `
+            <button class="voice-type-btn" data-type="${t.id}" data-source="${t.sourceType}">
+              <span class="type-icon">${t.icon}</span>
+              <span class="type-name">${t.name}</span>
+              <span class="type-desc">${t.description}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Show voice type picker
+ */
+function showVoiceTypePicker() {
+  // Create picker if it doesn't exist
+  if (!voicePickerEl) {
+    voicePickerEl = document.createElement('div');
+    voicePickerEl.className = 'voice-type-picker';
+    voicePickerEl.innerHTML = `
+      <div class="voice-picker-backdrop"></div>
+      <div class="voice-picker-content">
+        <div class="voice-picker-header">Add Voice</div>
+        ${renderVoicePickerSections()}
+      </div>
+    `;
+    document.body.appendChild(voicePickerEl);
+
+    // Handle clicks on backdrop (close) or buttons (select)
+    voicePickerEl.addEventListener('click', (e) => {
+      // Click on backdrop = close
+      if (e.target.classList.contains('voice-picker-backdrop')) {
+        hideVoiceTypePicker();
+        return;
+      }
+
+      // Click on type button = create voice
+      const btn = e.target.closest('.voice-type-btn');
+      if (btn) {
+        const typeId = btn.dataset.type;
+        const sourceType = btn.dataset.source;
+        const typeInfo = VOICE_TYPES.find(t => t.id === typeId);
+        addVoice({
+          name: typeInfo?.name || 'Voice',
+          icon: typeInfo?.icon || '🎵',
+          sourceType,
+          drumKit: typeInfo?.drumKit,
+          synthPreset: typeInfo?.synthPreset,
+        });
+        hideVoiceTypePicker();
+      }
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && voicePickerEl.classList.contains('active')) {
+        hideVoiceTypePicker();
+      }
+    });
+  }
+
+  voicePickerEl.classList.add('active');
+}
+
+/**
+ * Hide voice type picker
+ */
+function hideVoiceTypePicker() {
+  if (voicePickerEl) {
+    voicePickerEl.classList.remove('active');
+  }
 }
 
 /**
@@ -762,7 +989,7 @@ function handleMenuAction(action) {
       copyShareUrl();
       break;
     case 'settings':
-      eventBus.emit(Events.TOAST_SHOW, { message: 'Settings coming soon', type: 'info' });
+      settingsModal.show();
       break;
     case 'undo':
       history.undo();

@@ -7,12 +7,79 @@ import { state } from './state.js';
 
 const DRAFT_KEY = 'soundsculpt:draft';
 const DRAFT_TIMESTAMP_KEY = 'soundsculpt:draft:timestamp';
-const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+const SETTINGS_KEY = 'soundsculpt:settings';
+const DEFAULT_AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
 class DraftManager {
   constructor() {
     this.autoSaveTimer = null;
     this.isEnabled = true;
+    this.autoSaveInterval = DEFAULT_AUTO_SAVE_INTERVAL;
+    this.loadSettings();
+  }
+
+  /**
+   * Load settings from localStorage
+   */
+  loadSettings() {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        this.isEnabled = settings.autosaveEnabled ?? true;
+        this.autoSaveInterval = settings.autosaveInterval ?? DEFAULT_AUTO_SAVE_INTERVAL;
+      }
+    } catch (e) {
+      // Use defaults
+    }
+  }
+
+  /**
+   * Save settings to localStorage
+   */
+  saveSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        autosaveEnabled: this.isEnabled,
+        autosaveInterval: this.autoSaveInterval,
+      }));
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+  }
+
+  /**
+   * Get current settings
+   */
+  getSettings() {
+    return {
+      autosaveEnabled: this.isEnabled,
+      autosaveInterval: this.autoSaveInterval,
+    };
+  }
+
+  /**
+   * Set autosave interval
+   */
+  setAutoSaveInterval(intervalMs) {
+    this.autoSaveInterval = intervalMs;
+    this.saveSettings();
+    // Restart timer with new interval
+    if (this.autoSaveTimer) {
+      this.stopAutoSave();
+      this.startAutoSave();
+    }
+  }
+
+  /**
+   * Set autosave enabled/disabled
+   */
+  setAutoSaveEnabled(enabled) {
+    this.isEnabled = enabled;
+    this.saveSettings();
+    if (!enabled) {
+      this.stopAutoSave();
+    }
   }
 
   /**
@@ -109,6 +176,8 @@ class DraftManager {
    * Start auto-save timer
    */
   startAutoSave() {
+    if (!this.isEnabled) return;
+
     if (this.autoSaveTimer) {
       clearInterval(this.autoSaveTimer);
     }
@@ -117,7 +186,7 @@ class DraftManager {
       if (state.get('isDirty')) {
         this.saveDraft();
       }
-    }, AUTO_SAVE_INTERVAL);
+    }, this.autoSaveInterval);
 
     // Also save on project changes
     eventBus.on(Events.PROJECT_DIRTY, () => {
