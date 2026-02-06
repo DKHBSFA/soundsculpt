@@ -483,209 +483,1414 @@ export const TEMPLATES = [
   { id: 'luxury_minimal', name: 'Luxury Minimal', description: 'High-end, sophisticated', baseStyle: 'minimal-techno' },
 ];
 
-// === Pattern Presets for each style ===
-const STYLE_PATTERNS = {
-  electronic: {
-    tempo: 120,
-    key: 'A minor',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR808_bd').struct('t ~ ~ ~ t ~ ~ ~')" },
-      { name: 'HiHat', icon: '🎩', pattern: "s('RolandTR808_hh').struct('t t t t t t t t').gain(0.6)" },
-      { name: 'Arp', icon: '🎹', pattern: "note('<a3 c4 e4 a4>(3,8)').s('square').lpf(2500).delay(0.3).gain(0.7)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<a1 ~ e2 ~ c2 ~ g2 ~>').s('sawtooth').lpf(400).gain(0.8)" },
-      { name: 'Pad', icon: '🌊', pattern: "chord('<Am C F G>').voicing().s('sine').room(0.35).gain(0.4).slow(4)" },
-    ],
+// === NEW: Phase-based Preset System ===
+// Each style has distinct patterns for intro/build/climax/resolve phases
+// with genre-specific rhythms, swing, and orchestration
+
+/**
+ * Genre-specific rhythm patterns (16 steps)
+ * true = hit, false = rest
+ * Patterns capture the essential feel of each genre
+ */
+const RHYTHM_PATTERNS = {
+  // Four-on-floor kick
+  fourOnFloor: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+  // Backbeat snare (2 and 4)
+  backbeat: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+  // Trap hi-hat (triplet feel with rolls)
+  trapHihat: [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
+  // Trap 808 (syncopated)
+  trap808: [true, false, false, true, false, true, false, false, true, false, false, false, true, false, false, true],
+  // DnB two-step
+  dnbKick: [true, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+  dnbSnare: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+  // Jazz ride (swing pattern)
+  jazzRide: [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
+  // Lo-fi boom bap
+  lofiKick: [true, false, false, false, false, false, true, false, false, true, false, false, false, false, false, true],
+  // Sparse intro
+  sparse: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+  // Offbeat hi-hat
+  offbeat: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+  // Straight 8ths
+  straight8: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+  // Straight 16ths
+  straight16: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+  // Half notes
+  halfNotes: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+  // Quarter notes
+  quarterNotes: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+};
+
+// ============================================
+// PATTERN VARIATIONS - Fills and phrase variations
+// ============================================
+
+/**
+ * Pattern variations per style for musical interest
+ * base: standard pattern, fill: end of phrase, sparse: after fill for contrast
+ */
+const PATTERN_VARIATIONS = {
+  trap: {
+    'HiHat': {
+      base: [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
+      fill: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true], // Roll
+      sparse: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+    },
+    '808': {
+      base: [true, false, false, true, false, true, false, false, true, false, false, false, true, false, false, true],
+      fill: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, true], // Slide effect
+      sparse: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+    },
   },
+  'lo-fi': {
+    'HiHat': {
+      base: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      fill: [true, false, true, false, true, false, true, false, true, false, true, false, true, true, true, true],
+      sparse: [false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false],
+    },
+    'Kick': {
+      base: [true, false, false, false, false, false, true, false, false, true, false, false, false, false, false, true],
+      fill: [true, false, false, true, false, false, true, false, true, false, false, true, false, true, true, false],
+      sparse: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+    },
+  },
+  jazz: {
+    'Ride': {
+      base: [true, false, true, true, false, true, true, false, true, false, true, true, false, true, true, false],
+      fill: [true, true, true, true, false, true, true, true, true, true, false, true, true, false, true, true], // Busy cymbal
+      sparse: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+    },
+  },
+  electronic: {
+    'HiHat': {
+      base: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      fill: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      sparse: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+    },
+  },
+  dnb: {
+    'Snare': {
+      base: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      fill: [false, false, true, false, true, false, true, false, false, true, true, false, true, true, true, true], // Break fill
+      sparse: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+    },
+    'HiHat': {
+      base: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      fill: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      sparse: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+    },
+  },
+  ambient: {
+    'Pad': {
+      base: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      fill: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      sparse: [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+    },
+  },
+};
+
+// ============================================
+// VOICE LEADING RULES
+// ============================================
+
+/**
+ * Voice leading rules for smooth melodic motion
+ */
+const VOICE_LEADING_RULES = {
+  bass: {
+    maxInterval: 7, // Perfect fifth
+    preferRoot: true,
+    allowChromaticApproach: true,
+  },
+  lead: {
+    maxInterval: 5, // Perfect fourth (allow some leaps)
+    preferStepwise: true,
+    targetChordTones: 0.7,
+  },
+  arp: {
+    maxInterval: 12, // Octave - arps can jump
+    preferStepwise: false,
+    targetChordTones: 1.0,
+  },
+  pad: {
+    maxInterval: 4, // Major third
+    voiceIndependence: true,
+    smoothConnection: true,
+  },
+  chord: {
+    maxInterval: 4,
+    smoothConnection: true,
+  },
+};
+
+/**
+ * Select pattern variation based on position in phrase
+ * @param {string} voiceName - Voice name
+ * @param {string} style - Style ID
+ * @param {number} barInPhrase - Current bar in 4-bar phrase (0-3)
+ * @param {number} phase - Current phase
+ * @returns {boolean[]|null} Pattern variation or null
+ */
+function selectPatternVariation(voiceName, style, barInPhrase, phase) {
+  const styleVariations = PATTERN_VARIATIONS[style];
+  if (!styleVariations) return null;
+
+  const voiceVariations = styleVariations[voiceName];
+  if (!voiceVariations) return null;
+
+  // Last bar of phrase = fill (only in build/climax)
+  if (barInPhrase === 3 && (phase === 'build' || phase === 'climax')) {
+    return voiceVariations.fill || voiceVariations.base;
+  }
+
+  // First bar after fill = sparse for contrast
+  if (barInPhrase === 0 && phase !== 'intro') {
+    // 30% chance of sparse variation for musical breathing
+    if (Math.random() < 0.3) {
+      return voiceVariations.sparse || voiceVariations.base;
+    }
+  }
+
+  return voiceVariations.base;
+}
+
+/**
+ * Apply voice leading to smooth out melodic lines
+ * @param {object[]} notes - Array of note objects
+ * @param {string} voiceType - Voice type (bass, lead, arp, pad)
+ * @returns {object[]} Smoothed notes
+ */
+function applyVoiceLeading(notes, voiceType) {
+  const rules = VOICE_LEADING_RULES[voiceType];
+  if (!rules || notes.length === 0) return notes;
+
+  const smoothedNotes = [];
+  let prevPitch = null;
+
+  for (const note of notes) {
+    let pitch = note.pitch;
+
+    if (prevPitch !== null && rules.maxInterval) {
+      const interval = Math.abs(pitch - prevPitch);
+
+      // If interval too large, find closest octave
+      if (interval > rules.maxInterval) {
+        // Try octave adjustments
+        const options = [pitch, pitch + 12, pitch - 12, pitch + 24, pitch - 24];
+        let bestPitch = pitch;
+        let bestInterval = interval;
+
+        for (const opt of options) {
+          if (opt >= 24 && opt <= 108) { // Valid MIDI range
+            const optInterval = Math.abs(opt - prevPitch);
+            if (optInterval < bestInterval) {
+              bestInterval = optInterval;
+              bestPitch = opt;
+            }
+          }
+        }
+        pitch = bestPitch;
+      }
+    }
+
+    smoothedNotes.push({ ...note, pitch });
+    prevPitch = pitch;
+  }
+
+  return smoothedNotes;
+}
+
+// ============================================
+// STRUDEL PATTERN GENERATION
+// ============================================
+
+/**
+ * Convert MIDI note number to note name for Strudel
+ * @param {number} midi - MIDI note number
+ * @returns {string} Note name (e.g., 'c4', 'f#3')
+ */
+function midiToStrudelNote(midi) {
+  const noteNames = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'];
+  const octave = Math.floor(midi / 12) - 1;
+  const noteIndex = midi % 12;
+  return `${noteNames[noteIndex]}${octave}`;
+}
+
+/**
+ * Convert boolean steps array to Strudel struct string
+ * @param {boolean[]} steps - Step pattern
+ * @returns {string} Struct pattern (e.g., 't ~ t ~ t ~ t ~')
+ */
+function stepsToStruct(steps) {
+  return steps.map(s => s ? 't' : '~').join(' ');
+}
+
+/**
+ * Generate Strudel pattern code for a voice
+ * @param {object} voiceConfig - Voice configuration
+ * @param {object} preset - Style preset
+ * @param {string} phase - Phase to generate for (default: climax)
+ * @returns {string} Strudel pattern code
+ */
+function generateStrudelPattern(voiceConfig, preset, phase = 'climax') {
+  const { type, name, baseOctave = 3, sound } = voiceConfig;
+  const phaseConfig = preset.phases[phase];
+  const pattern = phaseConfig?.patterns?.[name];
+  const velocity = phaseConfig?.velocity || 0.7;
+
+  // Get chord notes for melodic voices
+  const chordNotes = [];
+  if (preset.chordMidi) {
+    const firstChord = Object.values(preset.chordMidi)[0];
+    if (firstChord) {
+      chordNotes.push(...firstChord.map(m => midiToStrudelNote(m + (baseOctave - 2) * 12)));
+    }
+  }
+
+  if (type === 'drum') {
+    return generateDrumStrudel(sound, pattern, velocity);
+  } else if (type === 'bass') {
+    return generateBassStrudel(preset, pattern, baseOctave, velocity);
+  } else if (type === 'arp') {
+    return generateArpStrudel(chordNotes, pattern, velocity);
+  } else if (type === 'pad' || type === 'chord') {
+    return generatePadStrudel(chordNotes, velocity);
+  } else if (type === 'lead') {
+    return generateLeadStrudel(chordNotes, pattern, velocity);
+  }
+  return '';
+}
+
+/**
+ * Generate Strudel pattern for drum voice
+ */
+function generateDrumStrudel(sound, pattern, velocity) {
+  const soundMap = {
+    kick: 'bd',
+    snare: 'sd',
+    hihat: 'hh',
+    openhat: 'oh',
+  };
+  const sampleName = soundMap[sound] || 'bd';
+
+  if (pattern) {
+    const struct = stepsToStruct(pattern);
+    return `s('${sampleName}').struct('${struct}').gain(${velocity.toFixed(2)})`;
+  }
+
+  // Default patterns based on sound
+  const defaultStructs = {
+    bd: 't ~ ~ ~ t ~ ~ ~ t ~ ~ ~ t ~ ~ ~',
+    sd: '~ ~ ~ ~ t ~ ~ ~ ~ ~ ~ ~ t ~ ~ ~',
+    hh: '~ ~ t ~ ~ ~ t ~ ~ ~ t ~ ~ ~ t ~',
+    oh: '~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ t ~',
+  };
+  const struct = defaultStructs[sampleName] || 't ~ ~ ~ t ~ ~ ~ t ~ ~ ~ t ~ ~ ~';
+  return `s('${sampleName}').struct('${struct}').gain(${velocity.toFixed(2)})`;
+}
+
+/**
+ * Generate Strudel pattern for bass voice
+ */
+function generateBassStrudel(preset, pattern, baseOctave, velocity) {
+  // Get root notes from chord progression
+  const roots = [];
+  if (preset.chordMidi) {
+    for (const chord of Object.values(preset.chordMidi)) {
+      if (chord && chord[0]) {
+        roots.push(midiToStrudelNote(chord[0]));
+      }
+    }
+  }
+
+  const noteStr = roots.length > 0 ? roots.join(' ') : `c${baseOctave}`;
+
+  if (pattern) {
+    const struct = stepsToStruct(pattern);
+    return `note('<${noteStr}>').s('sawtooth').struct('${struct}').lpf(200).gain(${velocity.toFixed(2)})`;
+  }
+
+  return `note('<${noteStr}>').s('sawtooth').struct('t ~ ~ t ~ t ~ ~ t ~ ~ ~ t ~ ~ t').lpf(200).gain(${velocity.toFixed(2)})`;
+}
+
+/**
+ * Generate Strudel pattern for arp voice
+ */
+function generateArpStrudel(chordNotes, pattern, velocity) {
+  const noteStr = chordNotes.length > 0 ? chordNotes.join(' ') : 'c4 e4 g4';
+
+  if (pattern) {
+    const struct = stepsToStruct(pattern);
+    return `note('<${noteStr}>').s('triangle').struct('${struct}').gain(${velocity.toFixed(2)})`;
+  }
+
+  return `note('<${noteStr}>').s('triangle').struct('t ~ t ~ t ~ t t t ~ t ~ t t t ~').gain(${velocity.toFixed(2)})`;
+}
+
+/**
+ * Generate Strudel pattern for pad/chord voice
+ */
+function generatePadStrudel(chordNotes, velocity) {
+  const noteStr = chordNotes.length > 0 ? chordNotes.join(' ') : 'c3 e3 g3';
+
+  return `note('<${noteStr}>').s('sine').lpf(800).room(0.3).gain(${velocity.toFixed(2)})`;
+}
+
+/**
+ * Generate Strudel pattern for lead voice
+ */
+function generateLeadStrudel(chordNotes, pattern, velocity) {
+  const noteStr = chordNotes.length > 0 ? chordNotes.join(' ') : 'e4 g4 a4 c5';
+
+  if (pattern) {
+    const struct = stepsToStruct(pattern);
+    return `note('<${noteStr}>').s('square').struct('${struct}').lpf(2000).gain(${velocity.toFixed(2)})`;
+  }
+
+  return `note('<${noteStr}>').s('square').struct('t ~ t ~ t ~ t t').lpf(2000).gain(${velocity.toFixed(2)})`;
+}
+
+/**
+ * Swing amount per genre (0 = straight, 0.67 = full triplet swing)
+ */
+const SWING_BY_STYLE = {
+  'jazz': 0.65,
+  'lo-fi': 0.58,
+  'chillwave': 0.55,
+  'trap': 0, // Straight, triplet feel is in the pattern itself
+  'dnb': 0,
+  'electronic': 0,
+  'minimal-techno': 0,
+  'synthwave': 0,
+  'glitch': 0,
+  'industrial': 0,
+  'upbeat': 0,
+  'acoustic': 0.3,
+  'world': 0.4,
+  'orchestral': 0,
+  'cinematic': 0,
+  'neo-classical': 0,
+  'corporate': 0,
+  'dramatic': 0,
+  'horror': 0,
+  'ambient': 0,
+};
+
+/**
+ * NEW: Style presets with phase-based orchestration
+ * Each phase defines which voices are active and their velocity
+ */
+const STYLE_PRESETS = {
   trap: {
     tempo: 140,
-    key: 'F minor',
+    key: 'F# minor',
+    swing: 0,
+    progression: ['i', 'bVI', 'bVII', 'v'], // F#m, D, E, C#m
+    chordMidi: {
+      'i': [42, 46, 49],      // F#m: F#2, A2, C#3
+      'bVI': [38, 42, 45],    // D: D2, F#2, A2
+      'bVII': [40, 44, 47],   // E: E2, G#2, B2
+      'v': [37, 41, 44],      // C#m: C#2, E2, G#2
+    },
     voices: [
-      { name: '808', icon: '🔊', pattern: "note('<f1 ~ ~ f1 ~ f1 ~ ~>').s('sawtooth').lpf(100).gain(0.9).decay(0.8)" },
-      { name: 'Snare', icon: '🥁', pattern: "s('RolandTR808_sd').struct('~ ~ ~ ~ t ~ ~ ~').gain(0.85)" },
-      { name: 'HiHat', icon: '🎩', pattern: "s('RolandTR808_hh').struct('t*16').gain(perlin.range(0.3,0.7))" },
-      { name: 'Lead', icon: '🎹', pattern: "note('<f4 ab4 c5 eb5>(5,8)').s('sawtooth').lpf(1500).gain(0.6)" },
+      { name: '808', icon: '🔊', type: 'bass', baseOctave: 1 },
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Snare', icon: '🥁', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'OpenHat', icon: '🎩', type: 'drum', sound: 'openhat' },
+      { name: 'Lead', icon: '🎹', type: 'lead', baseOctave: 4 },
+      { name: 'Pad', icon: '🌑', type: 'pad', baseOctave: 3 },
     ],
+    phases: {
+      intro: {
+        activeVoices: ['Pad', 'HiHat'],
+        velocity: 0.4,
+        patterns: {
+          'HiHat': [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+        },
+      },
+      build: {
+        activeVoices: ['808', 'Kick', 'Snare', 'HiHat', 'Pad'],
+        velocity: 0.65,
+        patterns: {
+          '808': RHYTHM_PATTERNS.trap808,
+          'Kick': [true, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false],
+          'Snare': RHYTHM_PATTERNS.backbeat,
+          'HiHat': RHYTHM_PATTERNS.trapHihat,
+        },
+      },
+      climax: {
+        activeVoices: ['808', 'Kick', 'Snare', 'HiHat', 'OpenHat', 'Lead', 'Pad'],
+        velocity: 0.9,
+        patterns: {
+          '808': RHYTHM_PATTERNS.trap808,
+          'Kick': [true, false, false, false, false, false, true, false, false, false, true, false, false, false, true, false],
+          'Snare': RHYTHM_PATTERNS.backbeat,
+          'HiHat': RHYTHM_PATTERNS.straight16,
+          'OpenHat': [false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['808', 'Pad'],
+        velocity: 0.35,
+        patterns: {
+          '808': [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        },
+      },
+    },
   },
+
+  'lo-fi': {
+    tempo: 78,
+    key: 'Eb major',
+    swing: 0.58,
+    progression: ['ii7', 'V7', 'Imaj7', 'vi7'], // Fm7, Bb7, Ebmaj7, Cm7
+    chordMidi: {
+      'ii7': [41, 44, 48, 51],    // Fm7
+      'V7': [46, 50, 53, 56],     // Bb7
+      'Imaj7': [39, 43, 46, 50],  // Ebmaj7
+      'vi7': [36, 39, 43, 46],    // Cm7
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Snare', icon: '🥁', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Piano', icon: '🎹', type: 'chord', baseOctave: 3 },
+      { name: 'Texture', icon: '📻', type: 'texture' },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Piano', 'Texture'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Piano', 'Texture'],
+        velocity: 0.55,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.lofiKick,
+          'Snare': RHYTHM_PATTERNS.backbeat,
+          'HiHat': [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Piano', 'Texture'],
+        velocity: 0.65,
+        patterns: {
+          'Kick': [true, false, false, true, false, false, true, false, false, true, false, false, false, false, false, true],
+          'Snare': RHYTHM_PATTERNS.backbeat,
+          'HiHat': [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Piano', 'Texture'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
+  },
+
+  jazz: {
+    tempo: 120,
+    key: 'Bb major',
+    swing: 0.65,
+    progression: ['IImaj7', 'V7', 'Imaj7', 'Imaj7'], // Cm7, F7, Bbmaj7
+    chordMidi: {
+      'IImaj7': [36, 39, 43, 46],  // Cm7
+      'V7': [41, 45, 48, 51],      // F7
+      'Imaj7': [46, 50, 53, 57],   // Bbmaj7
+    },
+    voices: [
+      { name: 'Ride', icon: '🥁', type: 'drum', sound: 'hihat' },
+      { name: 'Brush', icon: '🥁', type: 'texture' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Piano', icon: '🎹', type: 'chord', baseOctave: 3 },
+      { name: 'Lead', icon: '🎷', type: 'lead', baseOctave: 4 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Ride', 'Bass'],
+        velocity: 0.4,
+        patterns: {
+          'Ride': RHYTHM_PATTERNS.jazzRide,
+        },
+      },
+      build: {
+        activeVoices: ['Ride', 'Brush', 'Bass', 'Piano'],
+        velocity: 0.55,
+        patterns: {
+          'Ride': RHYTHM_PATTERNS.jazzRide,
+        },
+      },
+      climax: {
+        activeVoices: ['Ride', 'Brush', 'Bass', 'Piano', 'Lead'],
+        velocity: 0.75,
+        patterns: {
+          'Ride': [true, false, true, true, false, true, true, true, true, false, true, true, false, true, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Ride', 'Piano', 'Bass'],
+        velocity: 0.35,
+        patterns: {
+          'Ride': RHYTHM_PATTERNS.sparse,
+        },
+      },
+    },
+  },
+
+  electronic: {
+    tempo: 124,
+    key: 'A minor',
+    swing: 0,
+    progression: ['i', 'III', 'VI', 'VII'], // Am, C, F, G
+    chordMidi: {
+      'i': [45, 48, 52],      // Am
+      'III': [48, 52, 55],    // C
+      'VI': [41, 45, 48],     // F
+      'VII': [43, 47, 50],    // G
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Snare', icon: '🥁', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Arp', icon: '🎹', type: 'arp', baseOctave: 4 },
+      { name: 'Pad', icon: '🌊', type: 'pad', baseOctave: 3 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['HiHat', 'Pad'],
+        velocity: 0.4,
+        patterns: {
+          'HiHat': RHYTHM_PATTERNS.offbeat,
+        },
+      },
+      build: {
+        activeVoices: ['Kick', 'HiHat', 'Bass', 'Pad'],
+        velocity: 0.6,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'HiHat': RHYTHM_PATTERNS.straight8,
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Arp', 'Pad'],
+        velocity: 0.85,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'Snare': [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, true],
+          'HiHat': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Pad', 'Bass'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
+  },
+
   dnb: {
     tempo: 174,
     key: 'E minor',
+    swing: 0,
+    progression: ['i', 'III', 'VII', 'iv'], // Em, G, D, Am
+    chordMidi: {
+      'i': [40, 43, 47],      // Em
+      'III': [43, 47, 50],    // G
+      'VII': [38, 42, 45],    // D
+      'iv': [45, 48, 52],     // Am
+    },
     voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR909_bd').struct('t ~ ~ ~ ~ ~ t ~')" },
-      { name: 'Snare', icon: '🥁', pattern: "s('RolandTR909_sd').struct('~ ~ t ~ ~ ~ t ~').room(0.2)" },
-      { name: 'Break', icon: '⚡', pattern: "s('RolandTR909_hh').struct('t*8').gain(sine.range(0.4,0.7))" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<e1 ~ b1 ~ e1 g1 ~ b1>').s('sawtooth').lpf(300).gain(0.85)" },
-      { name: 'Pad', icon: '🌊', pattern: "chord('<Em G D Am>').voicing().s('sine').room(0.4).gain(0.35).slow(4)" },
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Snare', icon: '🥁', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '⚡', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 1 },
+      { name: 'Pad', icon: '🌊', type: 'pad', baseOctave: 3 },
     ],
+    phases: {
+      intro: {
+        activeVoices: ['HiHat', 'Pad'],
+        velocity: 0.45,
+        patterns: {
+          'HiHat': RHYTHM_PATTERNS.straight8,
+        },
+      },
+      build: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Pad'],
+        velocity: 0.7,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.dnbKick,
+          'Snare': RHYTHM_PATTERNS.dnbSnare,
+          'HiHat': RHYTHM_PATTERNS.straight8,
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Pad'],
+        velocity: 0.95,
+        patterns: {
+          'Kick': [true, false, false, false, false, false, true, false, false, false, true, false, false, false, true, false],
+          'Snare': [false, false, true, false, false, true, true, false, false, false, true, false, false, true, true, false],
+          'HiHat': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Pad', 'Bass'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
   },
-  'minimal-techno': {
-    tempo: 125,
-    key: 'A minor',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR909_bd').struct('t ~ ~ ~ t ~ ~ ~').room(0.1)" },
-      { name: 'HiHat', icon: '🎩', pattern: "s('RolandTR909_hh').struct('~ t ~ t ~ t ~ t').gain(0.5)" },
-      { name: 'Perc', icon: '🪘', pattern: "s('RolandTR909_rim').struct('~ ~ ~ t ~ ~ ~ ~').gain(0.6)" },
-      { name: 'Bass', icon: '🔊', pattern: "note('a1').s('sine').struct('t ~ ~ ~ t ~ t ~').gain(0.8)" },
-    ],
-  },
-  synthwave: {
-    tempo: 110,
-    key: 'D minor',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR808_bd').struct('t ~ ~ ~ t ~ ~ ~')" },
-      { name: 'Snare', icon: '🥁', pattern: "s('RolandTR808_sd').struct('~ ~ ~ ~ t ~ ~ ~').room(0.4).gain(0.9)" },
-      { name: 'Arp', icon: '🎹', pattern: "note('<d4 f4 a4 c5>(4,8)').s('sawtooth').lpf(3000).delay(0.4).gain(0.65)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<d2 ~ a2 ~ g2 ~ f2 ~>').s('square').lpf(800).gain(0.75)" },
-      { name: 'Pad', icon: '🌆', pattern: "chord('<Dm Bb C F>').voicing().s('sawtooth').lpf(2000).room(0.5).gain(0.4).slow(8)" },
-    ],
-  },
-  glitch: {
-    tempo: 130,
-    key: 'C minor',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR808_bd').struct('<t ~ ~ ~> <t t ~ ~>').gain(0.9)" },
-      { name: 'Glitch', icon: '💥', pattern: "s('RolandTR909_hh RolandTR909_rim').struct('t*8').chop(8).gain(perlin.range(0.3,0.8))" },
-      { name: 'Noise', icon: '📻', pattern: "s('white').gain(0.15).lpf(sine.range(500,5000)).struct('t/2')" },
-      { name: 'Bass', icon: '🔊', pattern: "note('<c1 ~ eb1 ~ g1 ~ c2 ~>').s('square').lpf(200).gain(0.75)" },
-    ],
-  },
-  industrial: {
-    tempo: 120,
-    key: 'B minor',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR909_bd').struct('t ~ t ~ t ~ t ~').gain(0.95)" },
-      { name: 'Metal', icon: '🏭', pattern: "s('RolandTR909_hh').struct('t*16').hpf(5000).gain(perlin.range(0.2,0.5))" },
-      { name: 'Noise', icon: '⚙️', pattern: "s('white').gain(0.2).lpf(2000).struct('~ ~ t ~ ~ ~ t ~')" },
-      { name: 'Bass', icon: '🔊', pattern: "note('<b1 ~ ~ b1 ~ ~ b1 ~>').s('sawtooth').lpf(250).distort(0.3).gain(0.8)" },
-    ],
-  },
-  dramatic: {
-    tempo: 100,
-    key: 'D minor',
-    voices: [
-      { name: 'Timpani', icon: '🥁', pattern: "note('<d2 ~ ~ ~ d2 ~ a2 ~>').s('triangle').decay(0.8).gain(0.9)" },
-      { name: 'Strings', icon: '🎻', pattern: "chord('<Dm Bb Gm A>').voicing().s('sawtooth').lpf(3000).room(0.5).gain(0.6).slow(4)" },
-      { name: 'Brass', icon: '🎺', pattern: "note('<d4 ~ f4 ~ a4 ~ d5 ~>').s('sawtooth').lpf(2500).gain(0.5).slow(2)" },
-    ],
-  },
-  horror: {
-    tempo: 80,
-    key: 'B minor',
-    voices: [
-      { name: 'Drone', icon: '👻', pattern: "note('b1').s('sine').fm(0.5).fmh(0.5).room(0.6).gain(0.4)" },
-      { name: 'Texture', icon: '🌑', pattern: "s('white').gain(0.1).lpf(perlin.range(200,2000)).slow(4)" },
-      { name: 'Plucks', icon: '🎸', pattern: "note('<b3 ~ d4 ~ f#4 ~ ~ ~>').s('triangle').decay(0.5).delay(0.5).gain(0.35).slow(2)" },
-    ],
-  },
-  jazz: {
-    tempo: 120,
-    key: 'G major',
-    voices: [
-      { name: 'Ride', icon: '🥁', pattern: "s('RolandTR909_hh').struct('t ~ t t ~ t t ~').gain(0.5)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<g2 b2 d3 f#3>(3,8)').s('triangle').gain(0.7)" },
-      { name: 'Piano', icon: '🎹', pattern: "chord('<Gmaj7 Am7 Bm7 Cmaj7>').voicing().s('sine').room(0.3).gain(0.5).slow(4)" },
-      { name: 'Lead', icon: '🎷', pattern: "note('<g4 a4 b4 d5 e5 d5 b4 a4>(5,8)').s('sawtooth').lpf(2000).gain(0.4)" },
-    ],
-  },
-  orchestral: {
-    tempo: 90,
-    key: 'C major',
-    voices: [
-      { name: 'Strings', icon: '🎻', pattern: "chord('<C Am F G>').voicing().s('sawtooth').lpf(4000).room(0.5).gain(0.55).slow(4)" },
-      { name: 'Cellos', icon: '🎻', pattern: "note('<c3 e3 f3 g3>').s('sawtooth').lpf(1500).room(0.4).gain(0.5).slow(4)" },
-      { name: 'Timpani', icon: '🥁', pattern: "note('<c2 ~ ~ ~ g2 ~ ~ ~>').s('triangle').decay(1).gain(0.7).slow(2)" },
-      { name: 'Brass', icon: '🎺', pattern: "chord('<C F G C>').s('sawtooth').lpf(2000).gain(0.4).slow(8)" },
-    ],
-  },
-  'neo-classical': {
-    tempo: 85,
-    key: 'A minor',
-    voices: [
-      { name: 'Piano', icon: '🎹', pattern: "note('<a3 c4 e4 a4 e4 c4>(3,8)').s('sine').room(0.4).gain(0.6)" },
-      { name: 'Strings', icon: '🎻', pattern: "chord('<Am F C G>').voicing().s('sawtooth').lpf(3000).room(0.5).gain(0.4).slow(8)" },
-      { name: 'Bass', icon: '🎻', pattern: "note('<a2 ~ f2 ~ c2 ~ g2 ~>').s('triangle').gain(0.55).slow(2)" },
-    ],
-  },
-  acoustic: {
-    tempo: 100,
-    key: 'G major',
-    voices: [
-      { name: 'Guitar', icon: '🎸', pattern: "note('<g3 b3 d4 g4>(4,8)').s('triangle').decay(0.4).gain(0.65)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<g2 ~ d3 ~ b2 ~ c3 ~>').s('triangle').gain(0.6)" },
-      { name: 'Perc', icon: '🪘', pattern: "s('RolandTR808_hh').struct('t ~ t ~ t ~ t ~').gain(0.4)" },
-    ],
-  },
+
   cinematic: {
     tempo: 95,
     key: 'D minor',
+    swing: 0,
+    progression: ['i', 'bVI', 'III', 'bVII'], // Dm, Bb, F, C
+    chordMidi: {
+      'i': [38, 41, 45],      // Dm
+      'bVI': [46, 50, 53],    // Bb
+      'III': [41, 45, 48],    // F
+      'bVII': [36, 40, 43],   // C
+    },
     voices: [
-      { name: 'Strings', icon: '🎻', pattern: "chord('<Dm Bb F C>').voicing().s('sawtooth').lpf(4000).room(0.6).gain(0.55).slow(4)" },
-      { name: 'Brass', icon: '🎺', pattern: "note('<d4 f4 a4 c5>').s('sawtooth').lpf(2500).room(0.4).gain(0.45).slow(8)" },
-      { name: 'Timpani', icon: '🥁', pattern: "note('<d2 ~ ~ d2 ~ a2 ~ ~>').s('triangle').decay(1).gain(0.75)" },
-      { name: 'Sub', icon: '🔊', pattern: "note('<d1 ~ ~ ~ d1 ~ ~ ~>').s('sine').gain(0.6).slow(2)" },
+      { name: 'Strings', icon: '🎻', type: 'pad', baseOctave: 3 },
+      { name: 'Brass', icon: '🎺', type: 'lead', baseOctave: 4 },
+      { name: 'Timpani', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Sub', icon: '🔊', type: 'bass', baseOctave: 1 },
     ],
+    phases: {
+      intro: {
+        activeVoices: ['Strings'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Strings', 'Sub', 'Timpani'],
+        velocity: 0.6,
+        patterns: {
+          'Timpani': RHYTHM_PATTERNS.sparse,
+        },
+      },
+      climax: {
+        activeVoices: ['Strings', 'Brass', 'Timpani', 'Sub'],
+        velocity: 0.9,
+        patterns: {
+          'Timpani': [true, false, false, true, false, true, false, false, true, false, false, false, true, false, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Strings', 'Sub'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
   },
-  corporate: {
-    tempo: 110,
-    key: 'C major',
-    voices: [
-      { name: 'Piano', icon: '🎹', pattern: "note('<c4 e4 g4 c5>(4,8)').s('sine').room(0.3).gain(0.55)" },
-      { name: 'Pad', icon: '🌊', pattern: "chord('<C G Am F>').voicing().s('sine').room(0.4).gain(0.35).slow(8)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<c2 ~ g2 ~ a2 ~ f2 ~>').s('triangle').gain(0.5)" },
-      { name: 'Perc', icon: '🥁', pattern: "s('RolandTR808_hh').struct('t ~ t ~ t ~ t ~').gain(0.35)" },
-    ],
-  },
-  upbeat: {
-    tempo: 125,
-    key: 'G major',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR808_bd').struct('t ~ ~ ~ t ~ ~ ~')" },
-      { name: 'Snare', icon: '🥁', pattern: "s('RolandTR808_sd').struct('~ ~ ~ ~ t ~ ~ ~').gain(0.85)" },
-      { name: 'HiHat', icon: '🎩', pattern: "s('RolandTR808_hh').struct('t t t t t t t t').gain(0.55)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<g2 ~ b2 ~ d3 ~ g2 ~>').s('triangle').gain(0.7)" },
-      { name: 'Synth', icon: '🎹', pattern: "note('<g4 b4 d5 g5>(4,8)').s('square').lpf(3000).gain(0.5)" },
-    ],
-  },
-  world: {
-    tempo: 105,
-    key: 'E minor',
-    voices: [
-      { name: 'Perc', icon: '🪘', pattern: "s('RolandTR808_bd RolandTR808_rim').struct('t ~ t ~ ~ t ~ t').gain(0.7)" },
-      { name: 'Shaker', icon: '🎵', pattern: "s('RolandTR808_hh').struct('t*8').gain(perlin.range(0.2,0.5))" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<e2 ~ g2 ~ a2 ~ b2 ~>').s('triangle').gain(0.65)" },
-      { name: 'Lead', icon: '🪈', pattern: "note('<e4 g4 a4 b4 a4 g4>(5,8)').s('sine').room(0.3).gain(0.5)" },
-    ],
-  },
+
   ambient: {
     tempo: 70,
     key: 'C major',
+    swing: 0,
+    progression: ['I', 'iii', 'vi', 'V'], // C, Em, Am, G
+    chordMidi: {
+      'I': [36, 40, 43],      // C
+      'iii': [40, 43, 47],    // Em
+      'vi': [45, 48, 52],     // Am
+      'V': [43, 47, 50],      // G
+    },
     voices: [
-      { name: 'Pad', icon: '🌊', pattern: "chord('<C Em Am G>').voicing().s('sine').room(0.7).gain(0.4).slow(16)" },
-      { name: 'Texture', icon: '🌌', pattern: "s('white').gain(0.05).lpf(perlin.range(500,3000)).slow(8)" },
-      { name: 'Bells', icon: '🔔', pattern: "note('<c5 e5 g5 b5>(3,16)').s('sine').room(0.6).decay(2).gain(0.3)" },
+      { name: 'Pad', icon: '🌊', type: 'pad', baseOctave: 3 },
+      { name: 'Bells', icon: '🔔', type: 'lead', baseOctave: 5 },
+      { name: 'Texture', icon: '🌌', type: 'texture' },
     ],
+    phases: {
+      intro: {
+        activeVoices: ['Texture'],
+        velocity: 0.3,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Pad', 'Texture'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      climax: {
+        activeVoices: ['Pad', 'Bells', 'Texture'],
+        velocity: 0.5,
+        patterns: {},
+      },
+      resolve: {
+        activeVoices: ['Pad', 'Texture'],
+        velocity: 0.25,
+        patterns: {},
+      },
+    },
   },
+
+  'minimal-techno': {
+    tempo: 125,
+    key: 'A minor',
+    swing: 0,
+    progression: ['i'], // Single chord, hypnotic
+    chordMidi: {
+      'i': [45, 48, 52],      // Am
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Rim', icon: '🪘', type: 'drum', sound: 'snare' },
+      { name: 'Bass', icon: '🔊', type: 'bass', baseOctave: 2 },
+      { name: 'Stab', icon: '🎹', type: 'lead', baseOctave: 4 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['HiHat'],
+        velocity: 0.35,
+        patterns: {
+          'HiHat': RHYTHM_PATTERNS.offbeat,
+        },
+      },
+      build: {
+        activeVoices: ['Kick', 'HiHat', 'Bass'],
+        velocity: 0.6,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'HiHat': RHYTHM_PATTERNS.offbeat,
+          'Bass': [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, true],
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'HiHat', 'Rim', 'Bass', 'Stab'],
+        velocity: 0.85,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'HiHat': RHYTHM_PATTERNS.straight16,
+          'Rim': [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+          'Bass': [true, false, false, false, true, false, true, false, false, true, true, false, false, true, false, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Kick', 'Bass'],
+        velocity: 0.4,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.sparse,
+          'Bass': RHYTHM_PATTERNS.halfNotes,
+        },
+      },
+    },
+  },
+
+  synthwave: {
+    tempo: 110,
+    key: 'D minor',
+    swing: 0,
+    progression: ['i', 'bVI', 'bVII', 'III'], // Dm, Bb, C, F
+    chordMidi: {
+      'i': [38, 41, 45],      // Dm
+      'bVI': [46, 50, 53],    // Bb
+      'bVII': [36, 40, 43],   // C
+      'III': [41, 45, 48],    // F
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Snare', icon: '🥁', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Arp', icon: '🎹', type: 'arp', baseOctave: 4 },
+      { name: 'Pad', icon: '🌆', type: 'pad', baseOctave: 3 },
+      { name: 'Lead', icon: '🎹', type: 'lead', baseOctave: 5 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Pad'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Pad'],
+        velocity: 0.6,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'Snare': RHYTHM_PATTERNS.backbeat,
+          'HiHat': RHYTHM_PATTERNS.straight8,
+          'Bass': [true, false, false, true, false, false, true, false, false, true, false, true, false, false, true, false],
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Snare', 'HiHat', 'Bass', 'Arp', 'Pad', 'Lead'],
+        velocity: 0.85,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'Snare': RHYTHM_PATTERNS.backbeat,
+          'HiHat': RHYTHM_PATTERNS.straight16,
+          'Bass': [true, false, false, true, false, false, true, false, true, false, false, true, false, true, false, false],
+          'Arp': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Pad', 'Bass'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
+  },
+
+  glitch: {
+    tempo: 130,
+    key: 'C minor',
+    swing: 0,
+    progression: ['i'], // Static, atonal focus
+    chordMidi: {
+      'i': [36, 39, 43],      // Cm
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Glitch', icon: '💥', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🔊', type: 'bass', baseOctave: 2 },
+      { name: 'Stutter', icon: '🔀', type: 'lead', baseOctave: 4 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['HiHat'],
+        velocity: 0.35,
+        patterns: {
+          // Irregular pattern
+          'HiHat': [true, false, true, false, false, true, false, false, true, true, false, false, true, false, false, true],
+        },
+      },
+      build: {
+        activeVoices: ['Kick', 'Glitch', 'HiHat', 'Bass'],
+        velocity: 0.6,
+        patterns: {
+          // Broken kick pattern
+          'Kick': [true, false, false, true, false, false, false, true, false, true, false, false, true, false, true, false],
+          'Glitch': [false, false, true, false, false, true, true, false, false, false, true, false, true, true, false, false],
+          'HiHat': [true, true, false, true, true, false, true, false, true, true, true, false, true, false, true, true],
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Glitch', 'HiHat', 'Bass', 'Stutter'],
+        velocity: 0.9,
+        patterns: {
+          // Chaotic patterns
+          'Kick': [true, false, true, false, false, true, false, true, true, false, false, true, false, true, true, false],
+          'Glitch': [true, true, false, true, true, false, true, false, true, true, true, false, true, false, true, true],
+          'HiHat': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Bass', 'HiHat'],
+        velocity: 0.3,
+        patterns: {
+          'HiHat': [true, false, false, false, false, false, true, false, false, false, false, false, true, false, false, false],
+        },
+      },
+    },
+  },
+
+  industrial: {
+    tempo: 120,
+    key: 'B minor',
+    swing: 0,
+    progression: ['i'], // Single chord, drone-like
+    chordMidi: {
+      'i': [35, 38, 42],      // Bm
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Metal', icon: '🏭', type: 'drum', sound: 'hihat' },
+      { name: 'Noise', icon: '⚙️', type: 'texture' },
+      { name: 'Bass', icon: '🔊', type: 'bass', baseOctave: 1 },
+      { name: 'Stab', icon: '🔪', type: 'lead', baseOctave: 3 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Noise'],
+        velocity: 0.35,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Kick', 'Metal', 'Noise', 'Bass'],
+        velocity: 0.7,
+        patterns: {
+          // Mechanical kick
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          // Clanking metal
+          'Metal': [false, false, true, false, false, false, true, true, false, false, true, false, false, true, true, false],
+          'Bass': [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Metal', 'Noise', 'Bass', 'Stab'],
+        velocity: 0.95,
+        patterns: {
+          // Relentless kick
+          'Kick': RHYTHM_PATTERNS.straight8,
+          'Metal': RHYTHM_PATTERNS.straight16,
+          'Bass': [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Noise', 'Bass'],
+        velocity: 0.35,
+        patterns: {
+          'Bass': RHYTHM_PATTERNS.halfNotes,
+        },
+      },
+    },
+  },
+
+  dramatic: {
+    tempo: 100,
+    key: 'D minor',
+    swing: 0,
+    progression: ['i', 'bVI', 'iv', 'V'], // Dm, Bb, Gm, A
+    chordMidi: {
+      'i': [38, 41, 45],      // Dm
+      'bVI': [46, 50, 53],    // Bb
+      'iv': [43, 46, 50],     // Gm
+      'V': [45, 49, 52],      // A
+    },
+    voices: [
+      { name: 'Timpani', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Strings', icon: '🎻', type: 'pad', baseOctave: 3 },
+      { name: 'Brass', icon: '🎺', type: 'lead', baseOctave: 4 },
+      { name: 'Sub', icon: '🔊', type: 'bass', baseOctave: 1 },
+      { name: 'Choir', icon: '🎤', type: 'pad', baseOctave: 4 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Strings'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Timpani', 'Strings', 'Sub'],
+        velocity: 0.6,
+        patterns: {
+          'Timpani': [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, true],
+        },
+      },
+      climax: {
+        activeVoices: ['Timpani', 'Strings', 'Brass', 'Sub', 'Choir'],
+        velocity: 0.95,
+        patterns: {
+          'Timpani': [true, false, true, false, true, false, false, true, true, false, true, false, true, true, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Strings', 'Sub'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
+  },
+
+  horror: {
+    tempo: 80,
+    key: 'B minor',
+    swing: 0,
+    progression: ['i', 'bII', 'bVI'], // Bm, C (tritone), G
+    chordMidi: {
+      'i': [35, 38, 42],      // Bm
+      'bII': [36, 40, 43],    // C (tritone relation)
+      'bVI': [43, 47, 50],    // G
+    },
+    voices: [
+      { name: 'Drone', icon: '👻', type: 'pad', baseOctave: 2 },
+      { name: 'Texture', icon: '🌑', type: 'texture' },
+      { name: 'Plucks', icon: '🩸', type: 'lead', baseOctave: 4 },
+      { name: 'Sub', icon: '🔊', type: 'bass', baseOctave: 1 },
+      { name: 'Hits', icon: '💀', type: 'drum', sound: 'kick' },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Drone', 'Texture'],
+        velocity: 0.3,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Drone', 'Texture', 'Sub', 'Plucks'],
+        velocity: 0.5,
+        patterns: {
+          'Plucks': [true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false],
+        },
+      },
+      climax: {
+        activeVoices: ['Drone', 'Texture', 'Sub', 'Plucks', 'Hits'],
+        velocity: 0.85,
+        patterns: {
+          'Plucks': [true, false, false, true, false, false, true, false, false, false, true, false, false, true, false, false],
+          'Hits': [true, false, false, false, false, false, false, false, true, false, false, false, false, false, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Drone', 'Texture'],
+        velocity: 0.25,
+        patterns: {},
+      },
+    },
+  },
+
+  orchestral: {
+    tempo: 90,
+    key: 'C major',
+    swing: 0,
+    progression: ['I', 'vi', 'IV', 'V'], // C, Am, F, G
+    chordMidi: {
+      'I': [36, 40, 43],      // C
+      'vi': [45, 48, 52],     // Am
+      'IV': [41, 45, 48],     // F
+      'V': [43, 47, 50],      // G
+    },
+    voices: [
+      { name: 'Strings', icon: '🎻', type: 'pad', baseOctave: 3 },
+      { name: 'Cellos', icon: '🎻', type: 'bass', baseOctave: 2 },
+      { name: 'Brass', icon: '🎺', type: 'lead', baseOctave: 4 },
+      { name: 'Timpani', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Woodwinds', icon: '🎷', type: 'lead', baseOctave: 5 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Strings'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Strings', 'Cellos', 'Brass'],
+        velocity: 0.6,
+        patterns: {},
+      },
+      climax: {
+        activeVoices: ['Strings', 'Cellos', 'Brass', 'Timpani', 'Woodwinds'],
+        velocity: 0.9,
+        patterns: {
+          'Timpani': [true, false, false, false, false, false, false, true, true, false, false, false, false, false, true, false],
+        },
+      },
+      resolve: {
+        activeVoices: ['Strings', 'Cellos'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
+  },
+
+  'neo-classical': {
+    tempo: 85,
+    key: 'A minor',
+    swing: 0,
+    progression: ['i', 'VI', 'III', 'VII'], // Am, F, C, G
+    chordMidi: {
+      'i': [45, 48, 52],      // Am
+      'VI': [41, 45, 48],     // F
+      'III': [36, 40, 43],    // C
+      'VII': [43, 47, 50],    // G
+    },
+    voices: [
+      { name: 'Piano', icon: '🎹', type: 'arp', baseOctave: 4 },
+      { name: 'Strings', icon: '🎻', type: 'pad', baseOctave: 3 },
+      { name: 'Cello', icon: '🎻', type: 'bass', baseOctave: 2 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Piano'],
+        velocity: 0.45,
+        patterns: {
+          'Piano': [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+        },
+      },
+      build: {
+        activeVoices: ['Piano', 'Strings'],
+        velocity: 0.6,
+        patterns: {
+          'Piano': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      climax: {
+        activeVoices: ['Piano', 'Strings', 'Cello'],
+        velocity: 0.8,
+        patterns: {
+          'Piano': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Piano'],
+        velocity: 0.35,
+        patterns: {
+          'Piano': [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+        },
+      },
+    },
+  },
+
+  acoustic: {
+    tempo: 100,
+    key: 'G major',
+    swing: 0.3,
+    progression: ['I', 'V', 'vi', 'IV'], // G, D, Em, C
+    chordMidi: {
+      'I': [43, 47, 50],      // G
+      'V': [38, 42, 45],      // D
+      'vi': [40, 43, 47],     // Em
+      'IV': [36, 40, 43],     // C
+    },
+    voices: [
+      { name: 'Guitar', icon: '🎸', type: 'arp', baseOctave: 3 },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Perc', icon: '🪘', type: 'drum', sound: 'hihat' },
+      { name: 'Shaker', icon: '🎵', type: 'drum', sound: 'snare' },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Guitar'],
+        velocity: 0.45,
+        patterns: {
+          // Fingerpicking pattern
+          'Guitar': [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+        },
+      },
+      build: {
+        activeVoices: ['Guitar', 'Bass', 'Perc'],
+        velocity: 0.6,
+        patterns: {
+          'Guitar': RHYTHM_PATTERNS.straight8,
+          'Perc': RHYTHM_PATTERNS.offbeat,
+        },
+      },
+      climax: {
+        activeVoices: ['Guitar', 'Bass', 'Perc', 'Shaker'],
+        velocity: 0.75,
+        patterns: {
+          'Guitar': RHYTHM_PATTERNS.straight8,
+          'Perc': RHYTHM_PATTERNS.straight8,
+          'Shaker': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Guitar'],
+        velocity: 0.35,
+        patterns: {
+          'Guitar': [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+        },
+      },
+    },
+  },
+
+  corporate: {
+    tempo: 110,
+    key: 'C major',
+    swing: 0,
+    progression: ['I', 'V', 'vi', 'IV'], // C, G, Am, F
+    chordMidi: {
+      'I': [36, 40, 43],      // C
+      'V': [43, 47, 50],      // G
+      'vi': [45, 48, 52],     // Am
+      'IV': [41, 45, 48],     // F
+    },
+    voices: [
+      { name: 'Piano', icon: '🎹', type: 'chord', baseOctave: 4 },
+      { name: 'Pad', icon: '🌊', type: 'pad', baseOctave: 3 },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Piano', 'Pad'],
+        velocity: 0.4,
+        patterns: {
+          'Piano': [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+        },
+      },
+      build: {
+        activeVoices: ['Piano', 'Pad', 'Bass', 'HiHat'],
+        velocity: 0.55,
+        patterns: {
+          'Piano': RHYTHM_PATTERNS.quarterNotes,
+          'HiHat': RHYTHM_PATTERNS.straight8,
+        },
+      },
+      climax: {
+        activeVoices: ['Piano', 'Pad', 'Bass', 'HiHat', 'Kick'],
+        velocity: 0.7,
+        patterns: {
+          'Piano': RHYTHM_PATTERNS.straight8,
+          'HiHat': RHYTHM_PATTERNS.straight8,
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+        },
+      },
+      resolve: {
+        activeVoices: ['Piano', 'Pad'],
+        velocity: 0.35,
+        patterns: {
+          'Piano': RHYTHM_PATTERNS.halfNotes,
+        },
+      },
+    },
+  },
+
+  upbeat: {
+    tempo: 125,
+    key: 'G major',
+    swing: 0,
+    progression: ['I', 'V', 'vi', 'IV'], // G, D, Em, C
+    chordMidi: {
+      'I': [43, 47, 50],      // G
+      'V': [38, 42, 45],      // D
+      'vi': [40, 43, 47],     // Em
+      'IV': [36, 40, 43],     // C
+    },
+    voices: [
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'Clap', icon: '👏', type: 'drum', sound: 'snare' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Synth', icon: '🎹', type: 'lead', baseOctave: 4 },
+      { name: 'Pad', icon: '☀️', type: 'pad', baseOctave: 3 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['HiHat', 'Pad'],
+        velocity: 0.4,
+        patterns: {
+          'HiHat': RHYTHM_PATTERNS.offbeat,
+        },
+      },
+      build: {
+        activeVoices: ['Kick', 'Clap', 'HiHat', 'Bass', 'Pad'],
+        velocity: 0.65,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'Clap': RHYTHM_PATTERNS.backbeat,
+          'HiHat': RHYTHM_PATTERNS.straight8,
+        },
+      },
+      climax: {
+        activeVoices: ['Kick', 'Clap', 'HiHat', 'Bass', 'Synth', 'Pad'],
+        velocity: 0.9,
+        patterns: {
+          'Kick': RHYTHM_PATTERNS.fourOnFloor,
+          'Clap': RHYTHM_PATTERNS.backbeat,
+          'HiHat': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Pad', 'Bass'],
+        velocity: 0.35,
+        patterns: {},
+      },
+    },
+  },
+
+  world: {
+    tempo: 105,
+    key: 'E minor',
+    swing: 0.4,
+    progression: ['i', 'III', 'VII', 'iv'], // Em, G, D, Am
+    chordMidi: {
+      'i': [40, 43, 47],      // Em
+      'III': [43, 47, 50],    // G
+      'VII': [38, 42, 45],    // D
+      'iv': [45, 48, 52],     // Am
+    },
+    voices: [
+      { name: 'Djembe', icon: '🪘', type: 'drum', sound: 'kick' },
+      { name: 'Shaker', icon: '🎵', type: 'drum', sound: 'hihat' },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Kalimba', icon: '🎹', type: 'lead', baseOctave: 4 },
+      { name: 'Pad', icon: '🌍', type: 'pad', baseOctave: 3 },
+    ],
+    phases: {
+      intro: {
+        activeVoices: ['Shaker', 'Pad'],
+        velocity: 0.4,
+        patterns: {
+          'Shaker': [true, false, true, true, false, true, false, true, true, false, true, true, false, true, false, true],
+        },
+      },
+      build: {
+        activeVoices: ['Djembe', 'Shaker', 'Bass', 'Pad'],
+        velocity: 0.6,
+        patterns: {
+          'Djembe': [true, false, false, true, false, true, true, false, true, false, false, true, false, true, false, true],
+          'Shaker': RHYTHM_PATTERNS.straight8,
+        },
+      },
+      climax: {
+        activeVoices: ['Djembe', 'Shaker', 'Bass', 'Kalimba', 'Pad'],
+        velocity: 0.8,
+        patterns: {
+          'Djembe': [true, false, true, true, false, true, true, false, true, true, false, true, false, true, true, false],
+          'Shaker': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Shaker', 'Pad'],
+        velocity: 0.35,
+        patterns: {
+          'Shaker': [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+        },
+      },
+    },
+  },
+
   chillwave: {
     tempo: 95,
     key: 'F major',
+    swing: 0.55,
+    progression: ['I', 'ii', 'IV', 'V'], // F, Gm, Bb, C
+    chordMidi: {
+      'I': [41, 45, 48],      // F
+      'ii': [43, 46, 50],     // Gm
+      'IV': [46, 50, 53],     // Bb
+      'V': [36, 40, 43],      // C
+    },
     voices: [
-      { name: 'Pad', icon: '🌅', pattern: "chord('<F Dm Bb C>').voicing().s('sawtooth').lpf(2000).room(0.5).gain(0.45).slow(8)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<f2 ~ d2 ~ bb2 ~ c2 ~>').s('triangle').gain(0.55).slow(2)" },
-      { name: 'Arp', icon: '🎹', pattern: "note('<f4 a4 c5 a4>(4,8)').s('square').lpf(1500).delay(0.35).gain(0.4)" },
-      { name: 'HiHat', icon: '🥁', pattern: "s('RolandTR808_hh').struct('t ~ t ~ t ~ t ~').gain(0.35)" },
+      { name: 'Pad', icon: '🌅', type: 'pad', baseOctave: 3 },
+      { name: 'Arp', icon: '🎹', type: 'arp', baseOctave: 4 },
+      { name: 'Bass', icon: '🎸', type: 'bass', baseOctave: 2 },
+      { name: 'Kick', icon: '🥁', type: 'drum', sound: 'kick' },
+      { name: 'HiHat', icon: '🎩', type: 'drum', sound: 'hihat' },
     ],
-  },
-  'lo-fi': {
-    tempo: 85,
-    key: 'D major',
-    voices: [
-      { name: 'Kick', icon: '🥁', pattern: "s('RolandTR808_bd').struct('t ~ ~ ~ t ~ ~ t').gain(0.8)" },
-      { name: 'Snare', icon: '🥁', pattern: "s('RolandTR808_sd').struct('~ ~ ~ ~ t ~ ~ ~').room(0.3).gain(0.7)" },
-      { name: 'HiHat', icon: '🎩', pattern: "s('RolandTR808_hh').struct('t t t t t t t t').gain(0.4).hpf(5000)" },
-      { name: 'Piano', icon: '🎹', pattern: "chord('<Dmaj7 Bm7 Gmaj7 A7>').voicing().s('sine').lpf(1500).room(0.4).gain(0.5).slow(4)" },
-      { name: 'Bass', icon: '🎸', pattern: "note('<d2 ~ b2 ~ g2 ~ a2 ~>').s('triangle').lpf(500).gain(0.6)" },
-    ],
+    phases: {
+      intro: {
+        activeVoices: ['Pad'],
+        velocity: 0.4,
+        patterns: {},
+      },
+      build: {
+        activeVoices: ['Pad', 'Bass', 'Kick', 'HiHat'],
+        velocity: 0.55,
+        patterns: {
+          'Kick': [true, false, false, false, false, false, true, false, false, true, false, false, false, false, false, false],
+          'HiHat': RHYTHM_PATTERNS.offbeat,
+        },
+      },
+      climax: {
+        activeVoices: ['Pad', 'Arp', 'Bass', 'Kick', 'HiHat'],
+        velocity: 0.7,
+        patterns: {
+          'Kick': [true, false, false, false, false, false, true, false, false, true, false, false, false, false, true, false],
+          'HiHat': RHYTHM_PATTERNS.straight8,
+          'Arp': RHYTHM_PATTERNS.straight16,
+        },
+      },
+      resolve: {
+        activeVoices: ['Pad'],
+        velocity: 0.3,
+        patterns: {},
+      },
+    },
   },
 };
+
+// Legacy fallback (all styles now converted to phase-based system)
+const STYLE_PATTERNS = {};
 
 // === Generation State ===
 let selectedStyle = 'electronic';
@@ -758,69 +1963,332 @@ function updateSummary() {
 }
 
 /**
- * Generate music based on current options
+ * Calculate phase structure based on duration
+ * @param {number} totalBars - Total number of bars
+ * @returns {object} Phase boundaries in bars
+ */
+function calculatePhaseStructure(totalBars) {
+  if (totalBars <= 8) {
+    // Very short: no intro, mostly climax
+    return {
+      intro: { start: 0, end: 0 },
+      build: { start: 0, end: 2 },
+      climax: { start: 2, end: totalBars - 1 },
+      resolve: { start: totalBars - 1, end: totalBars },
+    };
+  } else if (totalBars <= 16) {
+    // Short: compressed arc
+    return {
+      intro: { start: 0, end: 2 },
+      build: { start: 2, end: Math.floor(totalBars * 0.4) },
+      climax: { start: Math.floor(totalBars * 0.4), end: totalBars - 2 },
+      resolve: { start: totalBars - 2, end: totalBars },
+    };
+  } else {
+    // Full arc
+    return {
+      intro: { start: 0, end: Math.floor(totalBars * 0.15) },
+      build: { start: Math.floor(totalBars * 0.15), end: Math.floor(totalBars * 0.4) },
+      climax: { start: Math.floor(totalBars * 0.4), end: Math.floor(totalBars * 0.85) },
+      resolve: { start: Math.floor(totalBars * 0.85), end: totalBars },
+    };
+  }
+}
+
+/**
+ * Get the phase for a given bar number
+ * @param {number} bar - Bar number
+ * @param {object} phaseStructure - Phase boundaries
+ * @returns {string} Phase name
+ */
+function getPhaseForBar(bar, phaseStructure) {
+  if (bar >= phaseStructure.resolve.start) return 'resolve';
+  if (bar >= phaseStructure.climax.start) return 'climax';
+  if (bar >= phaseStructure.build.start) return 'build';
+  return 'intro';
+}
+
+/**
+ * Generate phase-aware pattern for a voice across all bars
+ * @param {object} voiceConfig - Voice configuration from preset
+ * @param {object} preset - Full style preset
+ * @param {number} totalBars - Total bars to generate
+ * @param {object} phaseStructure - Phase boundaries
+ * @param {number} energy - Energy level (0-100)
+ * @returns {object} Generated steps and notes for this voice
+ */
+function generatePhaseAwareVoice(voiceConfig, preset, totalBars, phaseStructure, energy) {
+  const stepsPerBar = 16;
+  const totalSteps = totalBars * stepsPerBar;
+  const steps = new Array(totalSteps).fill(false);
+  const notes = [];
+
+  const { root, scaleType } = parseKeyString(preset.key);
+  const swing = preset.swing || 0;
+  const styleId = Object.keys(STYLE_PRESETS).find(k => STYLE_PRESETS[k] === preset) || 'electronic';
+
+  for (let bar = 0; bar < totalBars; bar++) {
+    const phase = getPhaseForBar(bar, phaseStructure);
+    const phaseConfig = preset.phases[phase];
+
+    // Skip voice if not active in this phase
+    if (!phaseConfig.activeVoices.includes(voiceConfig.name)) {
+      continue;
+    }
+
+    // Get pattern for this voice in this phase
+    let pattern = phaseConfig.patterns?.[voiceConfig.name];
+    if (!pattern) {
+      // Use default pattern based on voice type
+      pattern = getDefaultPatternForType(voiceConfig.type, phase);
+    }
+
+    // Apply pattern variations for musical interest
+    const barInPhrase = bar % 4;
+    const variation = selectPatternVariation(voiceConfig.name, styleId, barInPhrase, phase);
+    if (variation) {
+      pattern = variation;
+    }
+
+    // Apply pattern to this bar's steps
+    const barStartStep = bar * stepsPerBar;
+    for (let i = 0; i < stepsPerBar; i++) {
+      if (pattern[i]) {
+        steps[barStartStep + i] = true;
+
+        // Generate notes for melodic voices
+        if (['bass', 'lead', 'arp', 'chord', 'pad'].includes(voiceConfig.type)) {
+          const chordIndex = Math.floor(bar / 2) % preset.progression.length;
+          const chordSymbol = preset.progression[chordIndex];
+          const chordMidi = preset.chordMidi?.[chordSymbol];
+
+          let pitch;
+          if (voiceConfig.type === 'bass') {
+            // Bass plays root
+            pitch = chordMidi ? chordMidi[0] : 36;
+          } else if (voiceConfig.type === 'lead') {
+            // Lead plays melodic line based on chord tones with variation
+            const melodicIndex = (notes.length + i) % (chordMidi?.length || 3);
+            pitch = chordMidi ? chordMidi[melodicIndex] + (voiceConfig.baseOctave - 2) * 12 : 60;
+            // Add some melodic variation
+            if (Math.random() > 0.7) pitch += [-2, 2, 5][Math.floor(Math.random() * 3)];
+          } else if (voiceConfig.type === 'arp') {
+            // Arp cycles through chord tones
+            const arpIndex = notes.length % (chordMidi?.length || 3);
+            pitch = chordMidi ? chordMidi[arpIndex] + (voiceConfig.baseOctave - 2) * 12 : 60;
+          } else {
+            // Pad/chord - use root position
+            pitch = chordMidi ? chordMidi[0] + (voiceConfig.baseOctave - 2) * 12 : 48;
+          }
+
+          // Add variation based on energy
+          const velocityBase = Math.floor(phaseConfig.velocity * 127);
+          const velocityVariation = Math.floor((energy / 100) * 20);
+          const velocity = Math.min(127, velocityBase + Math.floor(Math.random() * velocityVariation));
+
+          notes.push({
+            id: `gen-${Date.now()}-${bar}-${i}`,
+            pitch: pitch,
+            startBeat: barStartStep + i,
+            durationBeats: getDurationForType(voiceConfig.type, pattern, i, stepsPerBar),
+            velocity: velocity,
+          });
+        }
+      }
+    }
+
+    // Add fill at end of every 4 bars during build/climax
+    if ((bar + 1) % 4 === 0 && (phase === 'build' || phase === 'climax') && voiceConfig.type === 'drum') {
+      addFillPattern(steps, barStartStep, stepsPerBar, voiceConfig.sound);
+    }
+  }
+
+  // Apply voice leading to smooth melodic lines
+  const smoothedNotes = applyVoiceLeading(notes, voiceConfig.type);
+
+  return { steps, notes: smoothedNotes };
+}
+
+/**
+ * Get default pattern for voice type
+ */
+function getDefaultPatternForType(type, phase) {
+  if (type === 'texture') {
+    return RHYTHM_PATTERNS.halfNotes;
+  }
+  if (type === 'pad' || type === 'chord') {
+    return phase === 'climax' ? RHYTHM_PATTERNS.halfNotes : RHYTHM_PATTERNS.sparse;
+  }
+  if (type === 'bass') {
+    return phase === 'climax' ? RHYTHM_PATTERNS.straight8 : RHYTHM_PATTERNS.quarterNotes;
+  }
+  if (type === 'lead' || type === 'arp') {
+    return phase === 'climax'
+      ? [true, false, true, false, true, false, true, true, true, false, true, false, true, true, true, false]
+      : RHYTHM_PATTERNS.quarterNotes;
+  }
+  return RHYTHM_PATTERNS.quarterNotes;
+}
+
+/**
+ * Get duration based on voice type
+ */
+function getDurationForType(type, pattern, currentIndex, stepsPerBar) {
+  if (type === 'pad' || type === 'chord') {
+    return 8; // Half bar for sustained sounds
+  }
+  if (type === 'bass') {
+    // Find next hit
+    for (let i = currentIndex + 1; i < stepsPerBar; i++) {
+      if (pattern[i]) return i - currentIndex;
+    }
+    return 4;
+  }
+  if (type === 'lead' || type === 'arp') {
+    return 1; // Short notes
+  }
+  return 1;
+}
+
+/**
+ * Add a fill pattern at the end of a phrase
+ */
+function addFillPattern(steps, barStartStep, stepsPerBar, sound) {
+  // Add hits in the last 4 steps of the bar
+  const fillPattern = sound === 'snare'
+    ? [false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true]
+    : [false, false, false, false, false, false, false, false, false, false, true, false, true, false, true, false];
+
+  for (let i = 0; i < stepsPerBar; i++) {
+    if (fillPattern[i]) {
+      steps[barStartStep + i] = true;
+    }
+  }
+}
+
+/**
+ * Generate music based on current options - NEW PHASE-BASED SYSTEM
  */
 export function generate() {
-  const style = STYLE_PATTERNS[selectedStyle];
-  if (!style) {
+  // Check if we have a new-style preset
+  const preset = STYLE_PRESETS[selectedStyle];
+  const fallbackStyle = STYLE_PATTERNS[selectedStyle];
+
+  if (!preset && !fallbackStyle) {
     console.error('Unknown style:', selectedStyle);
     return null;
   }
-
-  // Calculate parameters based on energy
-  const energyMultiplier = 0.5 + (energyLevel / 100) * 0.5;
 
   // Create new project
   const projectName = `${STYLES.find(s => s.id === selectedStyle)?.name || 'Generated'} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
   state.newProject(projectName);
 
+  // Use new system if preset exists, otherwise fallback
+  if (preset) {
+    return generateWithPhases(preset, projectName);
+  } else {
+    return generateLegacy(fallbackStyle, projectName);
+  }
+}
+
+/**
+ * NEW: Generate music with phase-based system
+ */
+function generateWithPhases(preset, projectName) {
   // Set tempo (adjusted by energy)
+  const baseTempo = preset.tempo;
+  const tempoAdjust = Math.round((energyLevel - 50) * 0.15);
+  const finalTempo = baseTempo + tempoAdjust;
+  state.setTempo(finalTempo);
+
+  // Calculate bars and phase structure
+  const bars = durationToBars(selectedDuration, finalTempo);
+  const phaseStructure = calculatePhaseStructure(bars);
+  state.get('transport').loopEnd = bars * 16; // 16 steps per bar
+
+  // Create voices with phase-aware patterns
+  const createdVoices = [];
+
+  for (const voiceConfig of preset.voices) {
+    // Skip some voices at low energy
+    if (energyLevel < 40 && voiceConfig.type === 'lead') continue;
+    if (energyLevel < 30 && createdVoices.length >= 4) break;
+
+    // Generate phase-aware content
+    const { steps, notes } = generatePhaseAwareVoice(
+      voiceConfig,
+      preset,
+      bars,
+      phaseStructure,
+      energyLevel
+    );
+
+    // Determine source type
+    const sourceType = voiceConfig.type === 'drum' ? 'drum' : 'synth';
+
+    // Generate Strudel pattern code for Code Editor view
+    const patternCode = generateStrudelPattern(voiceConfig, preset, 'climax');
+
+    const voice = state.addVoice({
+      name: voiceConfig.name,
+      icon: voiceConfig.icon,
+      type: 'pattern',
+      sourceType: sourceType,
+      patternCode: patternCode,
+      content: {
+        steps: steps,
+        notes: notes,
+        melodicNotes: notes.map(n => n.pitch),
+      },
+    });
+
+    createdVoices.push(voice);
+  }
+
+  eventBus.emit(Events.TOAST_SHOW, {
+    message: `Generated ${createdVoices.length} voices with ${bars}-bar arc in ${STYLES.find(s => s.id === selectedStyle)?.name} style`,
+    type: 'success',
+  });
+
+  return {
+    projectName,
+    style: selectedStyle,
+    voices: createdVoices,
+    tempo: finalTempo,
+    bars,
+    phases: phaseStructure,
+  };
+}
+
+/**
+ * LEGACY: Generate music with old pattern system (for styles not yet converted)
+ */
+function generateLegacy(style, projectName) {
+  const energyMultiplier = 0.5 + (energyLevel / 100) * 0.5;
   const baseTempo = style.tempo;
-  const tempoAdjust = Math.round((energyLevel - 50) * 0.2); // +/-10 BPM based on energy
+  const tempoAdjust = Math.round((energyLevel - 50) * 0.2);
   state.setTempo(baseTempo + tempoAdjust);
 
-  // Calculate loop length based on duration
   const bars = durationToBars(selectedDuration, baseTempo + tempoAdjust);
-  state.get('transport').loopEnd = bars * 4; // 4 beats per bar
+  state.get('transport').loopEnd = bars * 4;
 
-  // Create voices with patterns
   const createdVoices = [];
   for (const voiceData of style.voices) {
-    // Skip some voices at low energy for sparser sound
     if (energyLevel < 40 && voiceData.name.toLowerCase().includes('lead')) continue;
     if (energyLevel < 30 && createdVoices.length >= 3) break;
 
-    // Adjust pattern based on energy
-    let patternCode = voiceData.pattern;
-
-    // Apply energy adjustments to gain
-    if (energyLevel < 50) {
-      patternCode = patternCode.replace(/\.gain\([\d.]+\)/g, (match) => {
-        const originalGain = parseFloat(match.match(/[\d.]+/)[0]);
-        return `.gain(${(originalGain * energyMultiplier).toFixed(2)})`;
-      });
-    } else if (energyLevel > 75) {
-      patternCode = patternCode.replace(/\.gain\([\d.]+\)/g, (match) => {
-        const originalGain = parseFloat(match.match(/[\d.]+/)[0]);
-        const boosted = Math.min(1, originalGain * 1.15);
-        return `.gain(${boosted.toFixed(2)})`;
-      });
-    }
-
-    // Check if melodic pattern
+    let patternCode = voiceData.pattern || '';
     const isMelodic = isMelodicPattern(patternCode);
 
     let steps, noteObjects, melodicNotes;
 
-    if (isMelodic) {
-      // Use PROCEDURAL GENERATION for melodic voices
+    if (isMelodic && patternCode) {
       const proceduralData = generateProceduralVoice(voiceData, style.key, energyLevel);
       steps = proceduralData.steps;
       noteObjects = proceduralData.notes;
       melodicNotes = proceduralData.melodicNotes;
     } else {
-      // Use original parsing for drum/percussion patterns
-      steps = parsePatternToSteps(patternCode, 16);
+      steps = patternCode ? parsePatternToSteps(patternCode, 16) : new Array(16).fill(false);
       melodicNotes = [];
       noteObjects = [];
     }
@@ -831,11 +2299,7 @@ export function generate() {
       type: 'pattern',
       sourceType: isMelodic ? 'synth' : 'drum',
       patternCode: patternCode,
-      content: {
-        steps: steps,
-        notes: noteObjects,
-        melodicNotes: melodicNotes,
-      },
+      content: { steps, notes: noteObjects, melodicNotes },
     });
 
     createdVoices.push(voice);

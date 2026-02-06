@@ -8,11 +8,36 @@ import { state } from '../state.js';
 import { history, AddNoteCommand, DeleteNoteCommand } from '../history.js';
 
 // Constants
-const STAFF_HEIGHT = 120;
+const STAFF_HEIGHT = 100; // Match voice panel row height more closely
 const MEASURE_WIDTH = 200;
-const LEFT_MARGIN = 60;
-const TOP_MARGIN = 40;
+const LEFT_MARGIN = 20; // Reduced since voice names are in left panel
+const TOP_MARGIN = 20;
 const CLEF_WIDTH = 40;
+const STAVE_LINE_SPACING = 10; // VexFlow default line spacing
+const VEXFLOW_STAVE_TOP_PADDING = 40; // VexFlow internal padding from stave y to top line
+
+// Duration options for picker (notes)
+const DURATION_OPTIONS = [
+  { beats: 4, label: '𝅝', name: 'Whole', isRest: false },
+  { beats: 2, label: '𝅗𝅥', name: 'Half', isRest: false },
+  { beats: 1, label: '𝅘𝅥', name: 'Quarter', isRest: false },
+  { beats: 0.5, label: '𝅘𝅥𝅮', name: 'Eighth', isRest: false },
+  { beats: 0.25, label: '𝅘𝅥𝅯', name: '16th', isRest: false },
+];
+
+// Rest options for picker
+const REST_OPTIONS = [
+  { beats: 4, label: '𝄻', name: 'Whole Rest', isRest: true },
+  { beats: 2, label: '𝄼', name: 'Half Rest', isRest: true },
+  { beats: 1, label: '𝄽', name: 'Quarter Rest', isRest: true },
+  { beats: 0.5, label: '𝄾', name: 'Eighth Rest', isRest: true },
+  { beats: 0.25, label: '𝄿', name: '16th Rest', isRest: true },
+];
+
+// Treble clef line MIDI pitches (line 1=top to line 5=bottom)
+const TREBLE_LINE_PITCHES = [77, 74, 71, 67, 64]; // F5, D5, B4, G4, E4
+// Bass clef line MIDI pitches
+const BASS_LINE_PITCHES = [57, 53, 50, 47, 43]; // A3, F3, D3, B2, G2
 
 // Note duration mappings (beats to VexFlow duration)
 const DURATION_MAP = [
@@ -81,6 +106,50 @@ function midiToNoteName(midiNote) {
 }
 
 /**
+ * Convert Y position on stave to MIDI pitch
+ * @param {number} y - Click Y coordinate relative to stave top
+ * @param {boolean} isBassClef - Whether the stave uses bass clef
+ * @returns {number} MIDI pitch
+ */
+function yToMidiPitch(relativeY, isBassClef) {
+  // VexFlow stave geometry:
+  // Line 1 (top) is at y=10 from stave origin
+  // Each line is 10px apart
+  // Spaces are between lines (5px offset from lines)
+
+  // Adjust for VexFlow's top padding (~10px)
+  const yFromTopLine = relativeY - 10;
+
+  // Each staff position (line or space) is 5px
+  // Position 0 = top line, increases going down
+  const staffPosition = Math.round(yFromTopLine / 5);
+
+  // Reference pitches (top line, position 0)
+  // Treble: F5 = 77, Bass: A3 = 57
+  const topLinePitch = isBassClef ? 57 : 77;
+
+  // Diatonic intervals going down from top line
+  // Each staff position is one diatonic step
+  // We map positions to semitones using the natural scale pattern
+  // F->E=-1, E->D=-2, D->C=-2, C->B=-1, B->A=-2, A->G=-2, G->F=-1, then repeat
+
+  // Semitone offsets for each staff position from F (treble) or A (bass)
+  // Pattern repeats every 7 positions (one octave diatonically)
+  const treblePattern = [0, -1, -3, -5, -6, -8, -10]; // F, E, D, C, B, A, G
+  const bassPattern = [0, -2, -4, -5, -7, -9, -10]; // A, G, F, E, D, C, B
+
+  const pattern = isBassClef ? bassPattern : treblePattern;
+
+  // Handle positions above or below the staff
+  const octaveOffset = Math.floor(staffPosition / 7);
+  const posInOctave = ((staffPosition % 7) + 7) % 7; // Handle negative positions
+
+  const semitones = pattern[posInOctave] - (octaveOffset * 12);
+
+  return topLinePitch + semitones;
+}
+
+/**
  * Score View class
  */
 export class ScoreView {
@@ -105,6 +174,14 @@ export class ScoreView {
 
     // Track rendered notes for click detection
     this.renderedNotes = [];
+
+    // Duration picker state
+    this.currentDuration = 1; // Default quarter note
+    this.currentIsRest = false; // Whether current duration is a rest
+    this.longPressTimer = null;
+    this.longPressStartPos = null;
+    this.durationPickerVisible = false;
+    this.pickerJustShown = false; // Prevent immediate hide after show
 
     this.init();
   }
@@ -178,15 +255,38 @@ export class ScoreView {
           }
         </div>
 
-        <div class="score-legend">
-          ${voices.map(voice => `
-            <div class="legend-voice ${voice.id === state.get('selectedVoiceId') ? 'selected' : ''}"
-                 data-voice-id="${voice.id}"
-                 style="--voice-color: ${voice.color}">
-              <span class="legend-color"></span>
-              <span class="legend-name">${voice.name}</span>
+        <!-- Duration picker (hidden by default) -->
+        <div id="score-duration-picker" class="score-duration-picker" style="display: none;">
+          <div class="duration-picker-section">
+            <div class="duration-picker-title">Notes</div>
+            <div class="duration-picker-options">
+              ${DURATION_OPTIONS.map(opt => `
+                <button class="duration-option ${opt.beats === this.currentDuration && !this.currentIsRest ? 'selected' : ''}"
+                        data-duration="${opt.beats}" data-is-rest="false" title="${opt.name}">
+                  <span class="duration-symbol">${opt.label}</span>
+                  <span class="duration-name">${opt.name}</span>
+                </button>
+              `).join('')}
             </div>
-          `).join('')}
+          </div>
+          <div class="duration-picker-section">
+            <div class="duration-picker-title">Rests</div>
+            <div class="duration-picker-options">
+              ${REST_OPTIONS.map(opt => `
+                <button class="duration-option ${opt.beats === this.currentDuration && this.currentIsRest ? 'selected' : ''}"
+                        data-duration="${opt.beats}" data-is-rest="true" title="${opt.name}">
+                  <span class="duration-symbol">${opt.label}</span>
+                  <span class="duration-name">${opt.name}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Current duration indicator -->
+        <div class="score-status-bar">
+          <span class="current-duration-label">Duration: ${this.getDurationLabel(this.currentDuration, this.currentIsRest)}</span>
+          <span class="hint">Hold click for menu | 1-5: notes | 6-0: rests | R: toggle rest</span>
         </div>
       </div>
     `;
@@ -200,6 +300,15 @@ export class ScoreView {
     this.svgContainer = this.container.querySelector('#score-svg-container');
     this.scrollContainer = this.container.querySelector('#score-scroll-container');
     this.playheadEl = this.container.querySelector('#score-playhead');
+  }
+
+  /**
+   * Get label for current duration
+   */
+  getDurationLabel(beats, isRest = false) {
+    const options = isRest ? REST_OPTIONS : DURATION_OPTIONS;
+    const opt = options.find(o => o.beats === beats);
+    return opt ? `${opt.label} ${opt.name}` : `${beats} beat(s)`;
   }
 
   /**
@@ -286,11 +395,7 @@ export class ScoreView {
       if (m === 0) {
         stave.addClef(clef);
         stave.addTimeSignature(`${this.beatsPerMeasure}/4`);
-        // Add voice name
-        this.context.save();
-        this.context.setFont('Arial', 12, 'bold');
-        this.context.fillText(voice.name, x - 50, y + 45);
-        this.context.restore();
+        // Voice name is shown in the left panel, not duplicated here
       }
 
       stave.setContext(this.context).draw();
@@ -473,7 +578,17 @@ export class ScoreView {
       }
     });
 
+    // Duration picker selection
     this.container.addEventListener('click', (e) => {
+      const durationOption = e.target.closest('.duration-option');
+      if (durationOption) {
+        this.currentDuration = parseFloat(durationOption.dataset.duration);
+        this.currentIsRest = durationOption.dataset.isRest === 'true';
+        this.hideDurationPicker();
+        this.render();
+        return;
+      }
+
       // Zoom controls
       if (e.target.id === 'score-zoom-in') {
         this.zoom = Math.min(this.zoom * 1.25, 3);
@@ -488,14 +603,6 @@ export class ScoreView {
       // Export button
       if (e.target.id === 'score-export-xml') {
         this.exportMusicXML();
-        return;
-      }
-
-      // Voice selection from legend
-      const legendVoice = e.target.closest('.legend-voice');
-      if (legendVoice) {
-        const voiceId = legendVoice.dataset.voiceId;
-        state.selectVoice(voiceId);
         return;
       }
 
@@ -523,8 +630,46 @@ export class ScoreView {
         }
         return;
       }
+    });
 
-      // Single click on empty space - add note
+    // Long-press for duration picker on score container
+    this.container.addEventListener('mousedown', (e) => {
+      const svgContainer = e.target.closest('#score-svg-container');
+      if (!svgContainer) return;
+
+      // Don't start long press if clicking on a note
+      if (e.target.closest('.fallback-note')) return;
+
+      const rect = svgContainer.getBoundingClientRect();
+      this.longPressStartPos = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        screenX: e.clientX,
+        screenY: e.clientY
+      };
+
+      // Start long-press timer (300ms)
+      this.longPressTimer = setTimeout(() => {
+        this.showDurationPicker(this.longPressStartPos.screenX, this.longPressStartPos.screenY);
+      }, 300);
+    });
+
+    this.container.addEventListener('mouseup', (e) => {
+      // Clear long-press timer
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+
+      // If duration picker is visible, don't add note
+      if (this.durationPickerVisible) {
+        return;
+      }
+
+      // Check if this was a quick click (not a long press)
+      const svgContainer = e.target.closest('#score-svg-container');
+      if (!svgContainer || !this.longPressStartPos) return;
+
       const rect = svgContainer.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -533,12 +678,33 @@ export class ScoreView {
       if (this.selectedNoteId) {
         this.selectedNoteId = null;
         this.selectedVoiceId = null;
+        this.longPressStartPos = null;
         this.render();
         return;
       }
 
       // Add note at click position
       this.handleScoreClick(x, y);
+      this.longPressStartPos = null;
+    });
+
+    this.container.addEventListener('mouseleave', () => {
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+    });
+
+    // Hide duration picker when clicking outside
+    document.addEventListener('click', (e) => {
+      // Don't hide if picker was just shown (prevents immediate hide on same click)
+      if (this.pickerJustShown) {
+        this.pickerJustShown = false;
+        return;
+      }
+      if (this.durationPickerVisible && !e.target.closest('.score-duration-picker')) {
+        this.hideDurationPicker();
+      }
     });
 
     // Keyboard shortcuts
@@ -551,13 +717,92 @@ export class ScoreView {
           this.selectedVoiceId = null;
         }
       }
+
+      // Number keys 1-5 for quick note duration selection
+      if (e.key >= '1' && e.key <= '5') {
+        const index = parseInt(e.key) - 1;
+        if (DURATION_OPTIONS[index]) {
+          this.currentDuration = DURATION_OPTIONS[index].beats;
+          this.currentIsRest = false;
+          this.render();
+        }
+      }
+
+      // Number keys 6-0 for quick rest duration selection
+      // 6=whole, 7=half, 8=quarter, 9=eighth, 0=16th
+      if (e.key >= '6' && e.key <= '9') {
+        const index = parseInt(e.key) - 6;
+        if (REST_OPTIONS[index]) {
+          this.currentDuration = REST_OPTIONS[index].beats;
+          this.currentIsRest = true;
+          this.render();
+        }
+      }
+      if (e.key === '0') {
+        this.currentDuration = REST_OPTIONS[4].beats; // 16th rest
+        this.currentIsRest = true;
+        this.render();
+      }
+
+      // 'r' key toggles rest mode for current duration
+      if (e.key === 'r' || e.key === 'R') {
+        this.currentIsRest = !this.currentIsRest;
+        this.render();
+      }
     });
+  }
+
+  /**
+   * Show duration picker at position
+   */
+  showDurationPicker(screenX, screenY) {
+    const picker = this.container.querySelector('#score-duration-picker');
+    if (!picker) return;
+
+    // Position picker near the click
+    const containerRect = this.container.getBoundingClientRect();
+    const pickerX = screenX - containerRect.left + 10;
+    const pickerY = screenY - containerRect.top + 10;
+
+    picker.style.left = `${pickerX}px`;
+    picker.style.top = `${pickerY}px`;
+    picker.style.display = 'block';
+    this.durationPickerVisible = true;
+    this.pickerJustShown = true; // Prevent immediate hide
+
+    // Update selected state
+    picker.querySelectorAll('.duration-option').forEach(opt => {
+      const optDuration = parseFloat(opt.dataset.duration);
+      const optIsRest = opt.dataset.isRest === 'true';
+      const isSelected = optDuration === this.currentDuration && optIsRest === this.currentIsRest;
+      opt.classList.toggle('selected', isSelected);
+    });
+  }
+
+  /**
+   * Hide duration picker
+   */
+  hideDurationPicker() {
+    const picker = this.container.querySelector('#score-duration-picker');
+    if (picker) {
+      picker.style.display = 'none';
+    }
+    this.durationPickerVisible = false;
   }
 
   /**
    * Handle click on score to add note
    */
   handleScoreClick(x, y) {
+    // If rest is selected, don't add a note (rests are implicit)
+    if (this.currentIsRest) {
+      eventBus.emit(Events.TOAST_SHOW, {
+        message: 'Rests are implicit - select a note duration to add notes',
+        type: 'info'
+      });
+      return;
+    }
+
     const selectedVoiceId = state.get('selectedVoiceId');
     if (!selectedVoiceId) {
       eventBus.emit(Events.TOAST_SHOW, {
@@ -571,58 +816,61 @@ export class ScoreView {
     const voiceIndex = voices.findIndex(v => v.id === selectedVoiceId);
     if (voiceIndex === -1) return;
 
-    // Calculate beat from x position (accounting for clef width on first measure)
-    const clefOffset = x > LEFT_MARGIN + CLEF_WIDTH + 30 ? 0 : CLEF_WIDTH + 30;
-    const effectiveX = x - clefOffset;
-    const beatOffset = (effectiveX - LEFT_MARGIN) / (MEASURE_WIDTH * this.zoom) * this.beatsPerMeasure;
+    // Calculate beat from x position
+    // First measure has clef + time signature, so first notes start around x = LEFT_MARGIN + CLEF_WIDTH + 50
+    const firstMeasureOffset = CLEF_WIDTH + 50;
+    let beatOffset;
+
+    if (x < LEFT_MARGIN + firstMeasureOffset) {
+      // Click is in first measure before notes area
+      beatOffset = 0;
+    } else {
+      // Calculate beat from x position
+      const measureX = (x - LEFT_MARGIN) / (MEASURE_WIDTH * this.zoom);
+      beatOffset = measureX * this.beatsPerMeasure;
+    }
 
     if (beatOffset < 0 || beatOffset > this.totalBeats) return;
 
     // Quantize to 1/4 beat grid
     const startBeat = Math.max(0, Math.round(beatOffset * 4) / 4);
 
-    // Calculate pitch from y position using staff line mapping
-    // Staff center is approximately at staffTop + 60 (middle of staff)
-    const staffTop = TOP_MARGIN + voiceIndex * STAFF_HEIGHT;
-    const staffCenter = staffTop + 60; // Middle line of staff
-    const relativeY = y - staffCenter;
+    // Calculate pitch from y position using proper VexFlow geometry
+    const staveY = TOP_MARGIN + voiceIndex * STAFF_HEIGHT;
 
-    // Each staff position is about 5px apart (line to space)
-    // B4 (71) is on the middle line of treble clef
-    // D3 (50) is on the middle line of bass clef
-    // Determine clef based on average pitch of voice's notes
+    // Determine clef based on voice name or existing notes
     const voice = voices[voiceIndex];
     const existingNotes = voice?.content?.notes || [];
     const avgPitch = existingNotes.length > 0
       ? existingNotes.reduce((sum, n) => sum + n.pitch, 0) / existingNotes.length
       : 60;
-    const isBassClef = avgPitch < 55;
 
-    // Reference pitch: middle line = B4 (71) for treble, D3 (50) for bass
-    const referencePitch = isBassClef ? 50 : 71;
-    // Each step is 5px, each step is a scale degree (not semitone)
-    // Convert y offset to scale steps, then to semitones
-    const stepsFromCenter = Math.round(-relativeY / 5);
+    // Also check voice name for bass instruments
+    const voiceNameLower = voice.name.toLowerCase();
+    const isBassVoice = voiceNameLower.includes('bass') || voiceNameLower.includes('cello');
+    const isBassClef = isBassVoice || avgPitch < 55;
 
-    // Map scale steps to semitones (diatonic: 2 2 1 2 2 2 1 pattern from C)
-    // Simplified: use chromatic mapping for now, but prefer scale notes
-    const semitoneOffset = Math.round(stepsFromCenter * 12 / 7); // Approximate diatonic
-    const pitch = referencePitch + semitoneOffset;
+    // Calculate pitch from Y position relative to actual staff lines
+    // VexFlow has internal padding: actual top line is at staveY + VEXFLOW_STAVE_TOP_PADDING
+    const actualTopLineY = staveY + VEXFLOW_STAVE_TOP_PADDING;
+    // yToMidiPitch expects the top line at y=10, so we add 10 to align
+    const relativeY = (y - actualTopLineY) + 10;
+    const pitch = yToMidiPitch(relativeY, isBassClef);
 
     // Clamp pitch to reasonable range
     const clampedPitch = Math.max(36, Math.min(96, pitch));
 
-    // Add the note
+    // Add the note with current duration
     const command = new AddNoteCommand(state, selectedVoiceId, {
       pitch: clampedPitch,
       startBeat,
-      durationBeats: 1,
+      durationBeats: this.currentDuration,
       velocity: 100,
     });
     history.execute(command);
 
     eventBus.emit(Events.TOAST_SHOW, {
-      message: `Added note ${midiToNoteName(clampedPitch)} at beat ${startBeat + 1}`,
+      message: `Added ${midiToNoteName(clampedPitch)} at beat ${startBeat + 1}`,
       type: 'info'
     });
   }

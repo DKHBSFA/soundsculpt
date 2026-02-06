@@ -885,10 +885,12 @@ function renderVoiceList() {
 
     strip.querySelector('[data-action="solo"]')?.addEventListener('click', () => {
       state.toggleSolo(voiceId);
+      renderVoiceList();
     });
 
     strip.querySelector('[data-action="mute"]')?.addEventListener('click', () => {
       state.toggleMute(voiceId);
+      renderVoiceList();
     });
 
     strip.querySelector('[data-action="volume"]')?.addEventListener('input', (e) => {

@@ -2397,6 +2397,123 @@ body.drag-over::after {
   color: var(--color-text-primary);
 }
 
+/* Score Duration Picker */
+.score-duration-picker {
+  position: absolute;
+  z-index: 100;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-3);
+  min-width: 180px;
+  animation: fadeIn var(--duration-fast) var(--ease-default);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.duration-picker-title {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-glass-border);
+}
+
+.duration-picker-section {
+  margin-bottom: var(--space-3);
+}
+
+.duration-picker-section:last-child {
+  margin-bottom: 0;
+}
+
+.duration-picker-section .duration-picker-title {
+  margin-bottom: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+.duration-picker-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.duration-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+  text-align: left;
+}
+
+.duration-option:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-glass-border);
+}
+
+.duration-option.selected {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.duration-symbol {
+  font-size: var(--text-xl);
+  font-family: 'Times New Roman', serif;
+  width: 24px;
+  text-align: center;
+}
+
+.duration-name {
+  font-size: var(--text-sm);
+  color: inherit;
+}
+
+/* Score Status Bar */
+.score-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg-elevated);
+  border-top: 1px solid var(--color-glass-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.current-duration-label {
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+}
+
+.hint {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Score view cursor for note input */
+#score-svg-container {
+  cursor: crosshair;
+}
+
 /* Export button */
 .btn-sm {
   padding: var(--space-1) var(--space-3);
