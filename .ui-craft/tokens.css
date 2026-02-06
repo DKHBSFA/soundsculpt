@@ -1,0 +1,674 @@
+/**
+ * SoundSculpt Design System Tokens
+ * Generated: 2026-02-04
+ * Mode: Hybrid
+ * Style: Glassmorphism + Neumorphism
+ * Factor X: Motion Surprise
+ */
+
+:root {
+  /* ============================================
+     COLOR SYSTEM
+     Dark mode native, cold palette, neon accents
+     ============================================ */
+
+  /* Background layers (darkest to lightest) */
+  --color-bg-base: #0a0a0c;
+  --color-bg-surface: #121215;
+  --color-bg-elevated: #1a1a1f;
+  --color-bg-overlay: #222228;
+  --color-bg-hover: #2a2a32;
+
+  /* Glass surfaces (for panels, modals) */
+  --color-glass-bg: rgba(26, 26, 31, 0.85);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-glass-highlight: rgba(255, 255, 255, 0.04);
+
+  /* Text hierarchy */
+  --color-text-primary: #f0f0f2;
+  --color-text-secondary: #a0a0a8;
+  --color-text-muted: #606068;
+  --color-text-disabled: #404048;
+
+  /* Primary accent (interactive elements) */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-primary-active: #2563eb;
+  --color-primary-muted: rgba(59, 130, 246, 0.15);
+
+  /* Neon accents (feedback, meters, recording) */
+  --color-neon-cyan: #00e5ff;
+  --color-neon-green: #00ff88;
+  --color-neon-red: #ff3366;
+  --color-neon-orange: #ff9500;
+  --color-neon-purple: #b388ff;
+
+  /* Semantic colors */
+  --color-success: #00c853;
+  --color-warning: #ffab00;
+  --color-error: #ff1744;
+  --color-info: #00b0ff;
+
+  /* Meter colors (audio levels) */
+  --color-meter-low: #00ff88;
+  --color-meter-mid: #ffdd00;
+  --color-meter-high: #ff6600;
+  --color-meter-clip: #ff1744;
+
+  /* Voice colors (for multi-track identification) */
+  --color-voice-1: #3b82f6;
+  --color-voice-2: #f59e0b;
+  --color-voice-3: #10b981;
+  --color-voice-4: #ec4899;
+  --color-voice-5: #8b5cf6;
+  --color-voice-6: #06b6d4;
+  --color-voice-7: #f97316;
+  --color-voice-8: #84cc16;
+
+  /* Transparency variants (for consistent alpha usage) */
+  --alpha-overlay-heavy: 0.8;
+  --alpha-overlay-medium: 0.5;
+  --alpha-overlay-light: 0.3;
+  --alpha-muted: 0.15;
+  --alpha-subtle: 0.1;
+  --alpha-hint: 0.05;
+
+  /* Composite transparent colors (dark mode) */
+  --color-overlay-bg: rgba(0, 0, 0, 0.8);
+  --color-shadow-dark: rgba(0, 0, 0, 0.5);
+  --color-shadow-medium: rgba(0, 0, 0, 0.3);
+  --color-shadow-light: rgba(0, 0, 0, 0.1);
+  --color-highlight-strong: rgba(255, 255, 255, 0.2);
+  --color-highlight-medium: rgba(255, 255, 255, 0.1);
+  --color-highlight-subtle: rgba(255, 255, 255, 0.05);
+  --color-highlight-hint: rgba(255, 255, 255, 0.03);
+
+  /* Neon color variants with transparency */
+  --color-neon-red-muted: rgba(255, 51, 102, 0.2);
+  --color-neon-red-subtle: rgba(255, 51, 102, 0.1);
+  --color-neon-red-glow: rgba(255, 51, 102, 0.4);
+  --color-neon-green-glow: rgba(0, 255, 136, 0.3);
+  --color-neon-cyan-glow: rgba(0, 229, 255, 0.3);
+
+  /* Primary color variants */
+  --color-primary-subtle: rgba(59, 130, 246, 0.1);
+  --color-primary-light: rgba(59, 130, 246, 0.25);
+  --color-primary-glow: rgba(59, 130, 246, 0.3);
+
+  /* Content backgrounds (for notation, documents that need light bg) */
+  --color-content-bg: #fefefe;
+  --color-content-bg-alt: #f8f8fa;
+
+  /* ============================================
+     TYPOGRAPHY
+     Distinctive, readable, technical feel
+     ============================================ */
+
+  /* Font families */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Font sizes (modular scale 1.2) */
+  --text-xs: 0.694rem;    /* 11px */
+  --text-sm: 0.833rem;    /* 13px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.2rem;      /* 19px */
+  --text-xl: 1.44rem;     /* 23px */
+  --text-2xl: 1.728rem;   /* 28px */
+  --text-3xl: 2.074rem;   /* 33px */
+  --text-4xl: 2.488rem;   /* 40px */
+
+  /* Font weights */
+  --font-light: 300;
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Letter spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
+
+  /* ============================================
+     SPACING
+     8px base grid (Swiss)
+     ============================================ */
+
+  --space-0: 0;
+  --space-1: 0.25rem;     /* 4px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-4: 1rem;        /* 16px */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-8: 2rem;        /* 32px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-12: 3rem;       /* 48px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+  --space-24: 6rem;       /* 96px */
+
+  /* Component-specific spacing */
+  --space-control-gap: var(--space-2);
+  --space-panel-padding: var(--space-4);
+  --space-section-gap: var(--space-6);
+
+  /* ============================================
+     SIZING
+     ============================================ */
+
+  /* Touch targets (minimum 44px) */
+  --size-touch-min: 2.75rem;    /* 44px */
+  --size-button-sm: 2rem;       /* 32px */
+  --size-button-md: 2.5rem;     /* 40px */
+  --size-button-lg: 3rem;       /* 48px */
+
+  /* Controls */
+  --size-knob-sm: 2rem;         /* 32px */
+  --size-knob-md: 3rem;         /* 48px */
+  --size-knob-lg: 4rem;         /* 64px */
+  --size-fader-width: 2rem;     /* 32px */
+  --size-fader-height: 8rem;    /* 128px */
+  --size-meter-width: 0.5rem;   /* 8px */
+
+  /* Layout */
+  --size-sidebar: 14rem;        /* 224px */
+  --size-voice-panel: 12rem;    /* 192px */
+  --size-transport-height: 3.5rem; /* 56px */
+  --size-toolbar-height: 2.5rem;   /* 40px */
+
+  /* ============================================
+     BORDERS & RADIUS
+     Geometric primary, organic for audio controls
+     ============================================ */
+
+  /* Border widths */
+  --border-thin: 1px;
+  --border-medium: 2px;
+  --border-thick: 3px;
+
+  /* Border radius (geometric) */
+  --radius-none: 0;
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+  /* Organic radius (for knobs, meters) */
+  --radius-organic: 50%;
+
+  /* ============================================
+     SHADOWS & EFFECTS
+     Glassmorphism + Neumorphism
+     ============================================ */
+
+  /* Elevation shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+
+  /* Neumorphic shadows (for controls) */
+  --shadow-neu-raised:
+    4px 4px 8px rgba(0, 0, 0, 0.5),
+    -2px -2px 6px rgba(255, 255, 255, 0.03);
+  --shadow-neu-pressed:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+  --shadow-neu-flat:
+    1px 1px 2px rgba(0, 0, 0, 0.3),
+    -1px -1px 2px rgba(255, 255, 255, 0.02);
+
+  /* Component-specific shadows */
+  --shadow-btn-sm:
+    2px 2px 4px rgba(0, 0, 0, 0.4),
+    -1px -1px 3px rgba(255, 255, 255, 0.03);
+  --shadow-btn-sm-hover:
+    3px 3px 6px rgba(0, 0, 0, 0.5),
+    -1px -1px 4px rgba(255, 255, 255, 0.04);
+  --shadow-slider-track:
+    inset 1px 1px 3px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.03);
+  --shadow-slider-thumb:
+    2px 2px 4px rgba(0, 0, 0, 0.5),
+    -1px -1px 2px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-slider-thumb-hover:
+    3px 3px 6px rgba(0, 0, 0, 0.6),
+    -1px -1px 3px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --shadow-sidebar: 2px 0 8px rgba(0, 0, 0, 0.3);
+  --shadow-dropdown: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-step-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  --border-sidebar: rgba(255, 255, 255, 0.12);
+
+  /* Slider gradient */
+  --gradient-slider-thumb: linear-gradient(135deg, var(--color-bg-overlay) 0%, var(--color-bg-elevated) 100%);
+
+  /* Glow effects (for active states, meters) */
+  --glow-primary: 0 0 20px rgba(59, 130, 246, 0.4);
+  --glow-neon-cyan: 0 0 20px rgba(0, 229, 255, 0.5);
+  --glow-neon-green: 0 0 20px rgba(0, 255, 136, 0.5);
+  --glow-neon-red: 0 0 20px rgba(255, 51, 102, 0.5);
+
+  /* Glass blur */
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+
+  /* ============================================
+     TRANSITIONS & MOTION
+     Factor X: Motion Surprise
+     ============================================ */
+
+  /* Timing functions */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Durations */
+  --duration-instant: 50ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  /* Motion tokens (for Factor X surprises) */
+  --motion-wiggle: wiggle 0.4s var(--ease-elastic);
+  --motion-pulse: pulse 2s var(--ease-in-out) infinite;
+  --motion-bounce: bounce 0.3s var(--ease-bounce);
+  --motion-glow-pulse: glow-pulse 1.5s var(--ease-in-out) infinite;
+
+  /* ============================================
+     Z-INDEX SCALE
+     ============================================ */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-tooltip: 600;
+  --z-toast: 700;
+
+  /* ============================================
+     BREAKPOINTS (as CSS custom properties for reference)
+     ============================================ */
+
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --bp-2xl: 1536px;
+}
+
+/* ============================================
+   KEYFRAME ANIMATIONS (Factor X: Motion Surprise)
+   ============================================ */
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: var(--glow-primary); }
+  50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
+}
+
+@keyframes meter-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes recording-pulse {
+  0%, 100% {
+    background-color: var(--color-neon-red);
+    box-shadow: 0 0 10px var(--color-neon-red);
+  }
+  50% {
+    background-color: #cc2952;
+    box-shadow: 0 0 20px var(--color-neon-red);
+  }
+}
+
+@keyframes playhead-glow {
+  0%, 100% { box-shadow: 0 0 8px var(--color-neon-cyan); }
+  50% { box-shadow: 0 0 16px var(--color-neon-cyan); }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+
+@media (prefers-contrast: high) {
+  :root {
+    --color-bg-base: #000000;
+    --color-bg-surface: #0a0a0a;
+    --color-bg-elevated: #141414;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #e0e0e0;
+    --color-glass-border: rgba(255, 255, 255, 0.2);
+    --border-thin: 2px;
+  }
+}
+
+/* ============================================
+   LIGHT MODE
+   Activated via data-theme="light" or system preference
+   ============================================ */
+
+[data-theme="light"],
+:root:has([data-theme="light"]) {
+  /* Background layers (lightest to mid) */
+  --color-bg-base: #f5f5f7;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #fafafa;
+  --color-bg-overlay: #f0f0f2;
+  --color-bg-hover: #e8e8ec;
+
+  /* Glass surfaces */
+  --color-glass-bg: rgba(255, 255, 255, 0.85);
+  --color-glass-border: rgba(0, 0, 0, 0.08);
+  --color-glass-highlight: rgba(255, 255, 255, 0.5);
+
+  /* Text hierarchy */
+  --color-text-primary: #1a1a1f;
+  --color-text-secondary: #5a5a65;
+  --color-text-muted: #8a8a95;
+  --color-text-disabled: #b0b0b8;
+
+  /* Primary accent (slightly darker for contrast) */
+  --color-primary: #2563eb;
+  --color-primary-hover: #3b82f6;
+  --color-primary-active: #1d4ed8;
+  --color-primary-muted: rgba(37, 99, 235, 0.12);
+
+  /* Neon accents (desaturated for light mode) */
+  --color-neon-cyan: #0891b2;
+  --color-neon-green: #059669;
+  --color-neon-red: #dc2626;
+  --color-neon-orange: #d97706;
+  --color-neon-purple: #7c3aed;
+
+  /* Semantic colors (adjusted for light bg) */
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --color-info: #0284c7;
+
+  /* Meter colors */
+  --color-meter-low: #059669;
+  --color-meter-mid: #ca8a04;
+  --color-meter-high: #ea580c;
+  --color-meter-clip: #dc2626;
+
+  /* Voice colors (slightly desaturated) */
+  --color-voice-1: #2563eb;
+  --color-voice-2: #d97706;
+  --color-voice-3: #059669;
+  --color-voice-4: #db2777;
+  --color-voice-5: #7c3aed;
+  --color-voice-6: #0891b2;
+  --color-voice-7: #ea580c;
+  --color-voice-8: #65a30d;
+
+  /* Composite transparent colors (light mode) */
+  --color-overlay-bg: rgba(0, 0, 0, 0.6);
+  --color-shadow-dark: rgba(0, 0, 0, 0.15);
+  --color-shadow-medium: rgba(0, 0, 0, 0.1);
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+  --color-highlight-strong: rgba(255, 255, 255, 0.9);
+  --color-highlight-medium: rgba(255, 255, 255, 0.6);
+  --color-highlight-subtle: rgba(255, 255, 255, 0.4);
+  --color-highlight-hint: rgba(255, 255, 255, 0.2);
+
+  /* Neon color variants with transparency (light mode) */
+  --color-neon-red-muted: rgba(220, 38, 38, 0.15);
+  --color-neon-red-subtle: rgba(220, 38, 38, 0.08);
+  --color-neon-red-glow: rgba(220, 38, 38, 0.25);
+  --color-neon-green-glow: rgba(5, 150, 105, 0.2);
+  --color-neon-cyan-glow: rgba(8, 145, 178, 0.2);
+
+  /* Primary color variants */
+  --color-primary-subtle: rgba(37, 99, 235, 0.08);
+  --color-primary-light: rgba(37, 99, 235, 0.2);
+  --color-primary-glow: rgba(37, 99, 235, 0.25);
+
+  /* Content backgrounds (same in light mode) */
+  --color-content-bg: #ffffff;
+  --color-content-bg-alt: #fafafa;
+
+  /* Shadows (positive for light mode) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+
+  /* Neumorphic shadows (inverted for light mode) */
+  --shadow-neu-raised:
+    4px 4px 8px rgba(0, 0, 0, 0.08),
+    -4px -4px 8px rgba(255, 255, 255, 0.8);
+  --shadow-neu-pressed:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.08),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.8);
+  --shadow-neu-flat:
+    1px 1px 2px rgba(0, 0, 0, 0.05),
+    -1px -1px 2px rgba(255, 255, 255, 0.6);
+
+  /* Component-specific shadows (light mode) */
+  --shadow-btn-sm:
+    2px 2px 4px rgba(0, 0, 0, 0.08),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  --shadow-btn-sm-hover:
+    3px 3px 6px rgba(0, 0, 0, 0.1),
+    -3px -3px 6px rgba(255, 255, 255, 0.9);
+  --shadow-slider-track:
+    inset 1px 1px 3px rgba(0, 0, 0, 0.1),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.8);
+  --shadow-slider-thumb:
+    2px 2px 4px rgba(0, 0, 0, 0.1),
+    -2px -2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --shadow-slider-thumb-hover:
+    3px 3px 6px rgba(0, 0, 0, 0.12),
+    -3px -3px 6px rgba(255, 255, 255, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-sidebar: 2px 0 8px rgba(0, 0, 0, 0.08);
+  --shadow-dropdown: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-step-inner:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  --border-sidebar: rgba(0, 0, 0, 0.1);
+
+  /* Slider gradient */
+  --gradient-slider-thumb: linear-gradient(135deg, #ffffff 0%, #f0f0f2 100%);
+
+  /* Glow effects (subtle for light mode) */
+  --glow-primary: 0 0 16px rgba(37, 99, 235, 0.25);
+  --glow-neon-cyan: 0 0 16px rgba(8, 145, 178, 0.3);
+  --glow-neon-green: 0 0 16px rgba(5, 150, 105, 0.3);
+  --glow-neon-red: 0 0 16px rgba(220, 38, 38, 0.3);
+}
+
+/* System preference fallback (when no data-theme is set) */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    /* Background layers */
+    --color-bg-base: #f5f5f7;
+    --color-bg-surface: #ffffff;
+    --color-bg-elevated: #fafafa;
+    --color-bg-overlay: #f0f0f2;
+    --color-bg-hover: #e8e8ec;
+
+    /* Glass surfaces */
+    --color-glass-bg: rgba(255, 255, 255, 0.85);
+    --color-glass-border: rgba(0, 0, 0, 0.08);
+    --color-glass-highlight: rgba(255, 255, 255, 0.5);
+
+    /* Text hierarchy */
+    --color-text-primary: #1a1a1f;
+    --color-text-secondary: #5a5a65;
+    --color-text-muted: #8a8a95;
+    --color-text-disabled: #b0b0b8;
+
+    /* Primary accent */
+    --color-primary: #2563eb;
+    --color-primary-hover: #3b82f6;
+    --color-primary-active: #1d4ed8;
+    --color-primary-muted: rgba(37, 99, 235, 0.12);
+
+    /* Neon accents */
+    --color-neon-cyan: #0891b2;
+    --color-neon-green: #059669;
+    --color-neon-red: #dc2626;
+    --color-neon-orange: #d97706;
+    --color-neon-purple: #7c3aed;
+
+    /* Semantic colors */
+    --color-success: #059669;
+    --color-warning: #d97706;
+    --color-error: #dc2626;
+    --color-info: #0284c7;
+
+    /* Meter colors */
+    --color-meter-low: #059669;
+    --color-meter-mid: #ca8a04;
+    --color-meter-high: #ea580c;
+    --color-meter-clip: #dc2626;
+
+    /* Voice colors */
+    --color-voice-1: #2563eb;
+    --color-voice-2: #d97706;
+    --color-voice-3: #059669;
+    --color-voice-4: #db2777;
+    --color-voice-5: #7c3aed;
+    --color-voice-6: #0891b2;
+    --color-voice-7: #ea580c;
+    --color-voice-8: #65a30d;
+
+    /* Composite transparent colors */
+    --color-overlay-bg: rgba(0, 0, 0, 0.6);
+    --color-shadow-dark: rgba(0, 0, 0, 0.15);
+    --color-shadow-medium: rgba(0, 0, 0, 0.1);
+    --color-shadow-light: rgba(0, 0, 0, 0.05);
+    --color-highlight-strong: rgba(255, 255, 255, 0.9);
+    --color-highlight-medium: rgba(255, 255, 255, 0.6);
+    --color-highlight-subtle: rgba(255, 255, 255, 0.4);
+    --color-highlight-hint: rgba(255, 255, 255, 0.2);
+
+    /* Neon color variants */
+    --color-neon-red-muted: rgba(220, 38, 38, 0.15);
+    --color-neon-red-subtle: rgba(220, 38, 38, 0.08);
+    --color-neon-red-glow: rgba(220, 38, 38, 0.25);
+    --color-neon-green-glow: rgba(5, 150, 105, 0.2);
+    --color-neon-cyan-glow: rgba(8, 145, 178, 0.2);
+
+    /* Primary color variants */
+    --color-primary-subtle: rgba(37, 99, 235, 0.08);
+    --color-primary-light: rgba(37, 99, 235, 0.2);
+    --color-primary-glow: rgba(37, 99, 235, 0.25);
+
+    /* Content backgrounds */
+    --color-content-bg: #ffffff;
+    --color-content-bg-alt: #fafafa;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+
+    /* Neumorphic shadows */
+    --shadow-neu-raised:
+      4px 4px 8px rgba(0, 0, 0, 0.08),
+      -4px -4px 8px rgba(255, 255, 255, 0.8);
+    --shadow-neu-pressed:
+      inset 2px 2px 4px rgba(0, 0, 0, 0.08),
+      inset -2px -2px 4px rgba(255, 255, 255, 0.8);
+    --shadow-neu-flat:
+      1px 1px 2px rgba(0, 0, 0, 0.05),
+      -1px -1px 2px rgba(255, 255, 255, 0.6);
+
+    /* Component-specific shadows */
+    --shadow-btn-sm:
+      2px 2px 4px rgba(0, 0, 0, 0.08),
+      -2px -2px 4px rgba(255, 255, 255, 0.8);
+    --shadow-btn-sm-hover:
+      3px 3px 6px rgba(0, 0, 0, 0.1),
+      -3px -3px 6px rgba(255, 255, 255, 0.9);
+    --shadow-slider-track:
+      inset 1px 1px 3px rgba(0, 0, 0, 0.1),
+      inset -1px -1px 2px rgba(255, 255, 255, 0.8);
+    --shadow-slider-thumb:
+      2px 2px 4px rgba(0, 0, 0, 0.1),
+      -2px -2px 4px rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    --shadow-slider-thumb-hover:
+      3px 3px 6px rgba(0, 0, 0, 0.12),
+      -3px -3px 6px rgba(255, 255, 255, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --shadow-sidebar: 2px 0 8px rgba(0, 0, 0, 0.08);
+    --shadow-dropdown: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-step-inner:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    --border-sidebar: rgba(0, 0, 0, 0.1);
+    --gradient-slider-thumb: linear-gradient(135deg, #ffffff 0%, #f0f0f2 100%);
+
+    /* Glow effects */
+    --glow-primary: 0 0 16px rgba(37, 99, 235, 0.25);
+    --glow-neon-cyan: 0 0 16px rgba(8, 145, 178, 0.3);
+    --glow-neon-green: 0 0 16px rgba(5, 150, 105, 0.3);
+    --glow-neon-red: 0 0 16px rgba(220, 38, 38, 0.3);
+  }
+}
