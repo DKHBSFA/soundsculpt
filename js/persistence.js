@@ -174,7 +174,7 @@ function migrateVoicesToPatternCode(data) {
     // Fallback: generate a placeholder pattern
     if (!patternCode) {
       if (voice.sourceType === 'drum' || voice.type === 'drum') {
-        patternCode = `// Migrated from legacy project\ns('${voice.content?.sound || 'bd}')\n  .struct('t ~ ~ ~ t ~ ~ ~')\n  .gain(${voice.volume || 0.8})`;
+        patternCode = `// Migrated from legacy project\ns("${voice.content?.sound || 'bd'}")\n  .struct('t ~ ~ ~ t ~ ~ ~')\n  .gain(${voice.volume || 0.8})`;
       } else {
         patternCode = `// Migrated from legacy project\nnote('c4')\n  .s('sine')\n  .gain(${voice.volume || 0.8})`;
       }
