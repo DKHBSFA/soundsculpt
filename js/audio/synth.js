@@ -493,19 +493,38 @@ class SynthEngine {
    */
   triggerStep(voices, step, time) {
     voices.forEach(({ voiceId, voice }) => {
-      const melodicNotes = voice.content?.melodicNotes;
+      // Use sourceType to determine drum vs synth, NOT melodicNotes
+      const isDrum = voice.sourceType === 'drum' || voice.type === 'drum';
 
-      if (melodicNotes && melodicNotes.length > 0) {
-        // Melodic voice: cycle through notes
-        const noteIndex = step % melodicNotes.length;
-        const midiNote = melodicNotes[noteIndex];
-        // Pass voice name and synthPreset for preset selection, use longer duration for pads
-        const isPad = voice.name.toLowerCase().includes('pad') || voice.synthPreset === 'pad';
-        const duration = isPad ? 0.8 : 0.2;
-        playNote(voiceId, midiNote, time, duration, voice.volume || 1, voice.name, voice.synthPreset);
-      } else {
+      if (isDrum) {
         // Percussion voice - use drumKit from voice if available
         playDrum(voiceId, voice.name, time, voice.volume || 1, voice.drumKit || '808');
+      } else {
+        // Melodic voice
+        const melodicNotes = voice.content?.melodicNotes;
+        let midiNote;
+
+        if (melodicNotes && melodicNotes.length > 0) {
+          // Cycle through melodic notes
+          const noteIndex = step % melodicNotes.length;
+          midiNote = melodicNotes[noteIndex];
+        } else {
+          // No melodic notes - use a default note based on voice type
+          // Bass = C2, Lead/Arp = C4, Pad = C3, default = C3
+          const voiceName = (voice.name || '').toLowerCase();
+          if (voiceName.includes('bass') || voiceName.includes('sub')) {
+            midiNote = 36; // C2
+          } else if (voiceName.includes('lead') || voiceName.includes('arp')) {
+            midiNote = 60; // C4
+          } else {
+            midiNote = 48; // C3
+          }
+        }
+
+        // Pass voice name and synthPreset for preset selection, use longer duration for pads
+        const isPad = voice.name?.toLowerCase().includes('pad') || voice.synthPreset === 'pad';
+        const duration = isPad ? 0.8 : 0.2;
+        playNote(voiceId, midiNote, time, duration, voice.volume || 1, voice.name || '', voice.synthPreset || '');
       }
     });
   }

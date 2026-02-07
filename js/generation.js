@@ -2850,11 +2850,21 @@ function createProjectFromAINew(aiData, preset, projectName) {
     // Determine source type
     const sourceType = voiceData.type === 'drum' ? 'drum' : 'synth';
 
+    // Get synth preset or drum kit based on voice type
+    const synthPreset = sourceType === 'synth'
+      ? getSynthPresetFromType(voiceData.type, voiceData.name)
+      : undefined;
+    const drumKit = sourceType === 'drum'
+      ? getDrumKitFromStyle(voiceData.name, preset.style)
+      : undefined;
+
     const voice = state.addVoice({
       name: voiceData.name,
       icon: getIconForType(voiceData.type),
       type: 'pattern',
       sourceType: sourceType,
+      synthPreset: synthPreset,
+      drumKit: drumKit,
       patternCode: voiceData.patternCode, // Keep full phase patterns
       content: {
         steps: steps,
@@ -2941,12 +2951,23 @@ function createProjectFromPresetPatterns(preset, projectName) {
 
     // Determine type from layer name
     const type = guessTypeFromLayer(layer);
+    const sourceType = type === 'drum' ? 'drum' : 'synth';
+
+    // Get synth preset or drum kit based on voice type
+    const synthPreset = sourceType === 'synth'
+      ? getSynthPresetFromType(type, layer)
+      : undefined;
+    const drumKit = sourceType === 'drum'
+      ? getDrumKitFromStyle(layer, preset.style)
+      : undefined;
 
     const voice = state.addVoice({
       name: capitalizeFirst(layer),
       icon: getIconForType(type),
       type: 'pattern',
-      sourceType: type === 'drum' ? 'drum' : 'synth',
+      sourceType: sourceType,
+      synthPreset: synthPreset,
+      drumKit: drumKit,
       patternCode: fullPatternCode,
       content: {
         steps,
@@ -3025,6 +3046,52 @@ function guessTypeFromLayer(layer) {
   return 'melodic';
 }
 
+/**
+ * Get synth preset name from voice type
+ * @param {string} type - Voice type (bass, lead, pad, arp, etc.)
+ * @param {string} name - Voice name (fallback)
+ * @returns {string} Synth preset name for synth.js
+ */
+function getSynthPresetFromType(type, name = '') {
+  const synthPresetMap = {
+    bass: 'bass',
+    lead: 'lead',
+    pad: 'pad',
+    arp: 'arp',
+    pluck: 'pluck',
+    piano: 'piano',
+    keys: 'piano',
+    strings: 'strings',
+    brass: 'brass',
+    melodic: 'lead',
+  };
+
+  // Try type first
+  if (synthPresetMap[type]) return synthPresetMap[type];
+
+  // Try name
+  const lowerName = (name || '').toLowerCase();
+  for (const [key, preset] of Object.entries(synthPresetMap)) {
+    if (lowerName.includes(key)) return preset;
+  }
+
+  return 'default';
+}
+
+/**
+ * Get drum kit name from voice type/name
+ * @param {string} name - Voice name
+ * @param {string} style - Style (jazz uses jazz kit)
+ * @returns {string} Drum kit name (808, 909, 606, jazz)
+ */
+function getDrumKitFromStyle(name, style = '') {
+  const lowerStyle = (style || '').toLowerCase();
+  if (lowerStyle.includes('jazz')) return 'jazz';
+  if (lowerStyle.includes('909') || lowerStyle.includes('techno')) return '909';
+  if (lowerStyle.includes('606')) return '606';
+  return '808';
+}
+
 function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -3064,6 +3131,14 @@ function generateWithPhases(preset, projectName) {
     // Determine source type
     const sourceType = voiceConfig.type === 'drum' ? 'drum' : 'synth';
 
+    // Get synth preset or drum kit based on voice type
+    const synthPreset = sourceType === 'synth'
+      ? getSynthPresetFromType(voiceConfig.type, voiceConfig.name)
+      : undefined;
+    const drumKit = sourceType === 'drum'
+      ? getDrumKitFromStyle(voiceConfig.name, selectedStyle)
+      : undefined;
+
     // Generate Strudel pattern code for Code Editor view
     const patternCode = generateStrudelPattern(voiceConfig, preset, 'climax');
 
@@ -3072,6 +3147,8 @@ function generateWithPhases(preset, projectName) {
       icon: voiceConfig.icon,
       type: 'pattern',
       sourceType: sourceType,
+      synthPreset: synthPreset,
+      drumKit: drumKit,
       patternCode: patternCode,
       content: {
         steps: steps,
@@ -3117,6 +3194,7 @@ function generateLegacy(style, projectName) {
 
     let patternCode = voiceData.pattern || '';
     const isMelodic = isMelodicPattern(patternCode);
+    const sourceType = isMelodic ? 'synth' : 'drum';
 
     let steps, noteObjects, melodicNotes;
 
@@ -3131,11 +3209,21 @@ function generateLegacy(style, projectName) {
       noteObjects = [];
     }
 
+    // Get synth preset or drum kit based on voice type
+    const synthPreset = sourceType === 'synth'
+      ? getSynthPresetFromType(voiceData.type, voiceData.name)
+      : undefined;
+    const drumKit = sourceType === 'drum'
+      ? getDrumKitFromStyle(voiceData.name, selectedStyle)
+      : undefined;
+
     const voice = state.addVoice({
       name: voiceData.name,
       icon: voiceData.icon,
       type: 'pattern',
-      sourceType: isMelodic ? 'synth' : 'drum',
+      sourceType: sourceType,
+      synthPreset: synthPreset,
+      drumKit: drumKit,
       patternCode: patternCode,
       content: { steps, notes: noteObjects, melodicNotes },
     });
@@ -3790,13 +3878,19 @@ function createProjectFromAI(aiData, genre) {
                         synthPresetMap[voiceData.name?.toLowerCase()] ||
                         (voiceData.type === 'melodic' ? 'lead' : 'default');
 
+    // Get drum kit based on genre
+    const drumKit = sourceType === 'drum'
+      ? getDrumKitFromStyle(voiceData.name, genre)
+      : undefined;
+
     const voice = state.addVoice({
       name: voiceData.name,
       icon: getVoiceIcon(voiceData.type, voiceData.sound),
       type: 'pattern',
       sourceType,
       sound: soundMap[voiceData.sound] || voiceData.sound,
-      synthPreset,
+      synthPreset: sourceType === 'synth' ? synthPreset : undefined,
+      drumKit,
       content,
     });
 
