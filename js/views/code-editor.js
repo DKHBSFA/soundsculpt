@@ -813,10 +813,11 @@ note("c4 e4 g4 c5")
     });
   });
 
-  // Docs button
+  // Docs button - opens Strudel documentation
   elements.btnDocs.addEventListener('click', () => {
+    window.open('https://strudel.cc/learn/mini-notation/', '_blank');
     eventBus.emit(Events.TOAST_SHOW, {
-      message: 'Documentation coming soon',
+      message: 'Opening Strudel documentation...',
       type: 'info',
     });
   });

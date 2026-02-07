@@ -22,7 +22,7 @@
   <!-- VexFlow for music notation (Score View) -->
   <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 
-  <!-- CodeMirror 6 for Code Editor (Phase 5) -->
+  <!-- CodeMirror 6 for Code Editor (Phase 5) + Tone.js + Strudel -->
   <script type="importmap">
     {
       "imports": {
@@ -36,7 +36,8 @@
         "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.1",
         "@strudel/core": "https://esm.sh/@strudel/core@1.1.0",
         "@strudel/mini": "https://esm.sh/@strudel/mini@1.1.0",
-        "@strudel/webaudio": "https://esm.sh/@strudel/webaudio@1.1.0"
+        "@strudel/webaudio": "https://esm.sh/@strudel/webaudio@1.1.0",
+        "tone": "https://esm.sh/tone@14.7.77"
       }
     }
   </script>
@@ -269,6 +270,7 @@
       <hr role="separator">
       <button data-action="export-wav" role="menuitem">Export WAV</button>
       <button data-action="export-midi" role="menuitem">Export MIDI</button>
+      <button data-action="export-opus" role="menuitem">Export Opus/WebM</button>
       <hr role="separator">
       <button data-action="settings" role="menuitem">Auto-save Settings...</button>
     </div>
@@ -289,6 +291,9 @@
       <button data-action="view-score" role="menuitem">Score <kbd aria-hidden="true">3</kbd></button>
       <button data-action="view-patch" role="menuitem">Patch <kbd aria-hidden="true">4</kbd></button>
       <button data-action="view-code" role="menuitem">Code <kbd aria-hidden="true">5</kbd></button>
+      <hr role="separator">
+      <button data-action="mixer" role="menuitem">Mixer Window <kbd aria-hidden="true">X</kbd></button>
+      <button data-action="view-ai-response" role="menuitem">View AI Response <kbd aria-hidden="true">I</kbd></button>
       <hr role="separator">
       <button data-action="zoom-in" role="menuitem">Zoom In <kbd aria-hidden="true">Ctrl++</kbd></button>
       <button data-action="zoom-out" role="menuitem">Zoom Out <kbd aria-hidden="true">Ctrl+-</kbd></button>
@@ -381,6 +386,14 @@
           <div id="ai-key-status" class="ai-key-status">
             <span class="ai-key-status-text" id="ai-key-status-text">Using default API key</span>
             <button class="btn-link" id="btn-configure-api-key">Use your own key</button>
+          </div>
+        </section>
+
+        <!-- AI Model Selection -->
+        <section class="generation-section" aria-labelledby="model-section-title">
+          <h3 class="generation-section-title" id="model-section-title">AI Model</h3>
+          <div id="model-selector" class="model-selector" role="radiogroup" aria-labelledby="model-section-title">
+            <!-- Populated by JS -->
           </div>
         </section>
       </div>

@@ -623,9 +623,13 @@ export class PianoRollView {
 
   /**
    * Convert X coordinate to beat
+   * Uses high precision internally to avoid rounding issues at different zoom levels
    */
   xToBeat(x) {
-    return x / (BEAT_WIDTH * this.zoom);
+    // Calculate beat with 4 decimal precision to ensure consistency across zoom levels
+    const rawBeat = x / (BEAT_WIDTH * this.zoom);
+    // Round to 4 decimal places to avoid floating point errors
+    return Math.round(rawBeat * 10000) / 10000;
   }
 
   /**
@@ -638,10 +642,16 @@ export class PianoRollView {
 
   /**
    * Snap beat to grid
+   * Uses fixed-point arithmetic to ensure consistent snapping across zoom levels
    */
   snapBeat(beat) {
     if (this.snapValue === 0) return beat;
-    return Math.round(beat / this.snapValue) * this.snapValue;
+    // Use fixed-point math with 4 decimal precision for consistency
+    const snapPrecision = 10000;
+    const snapValueFixed = Math.round(this.snapValue * snapPrecision);
+    const beatFixed = Math.round(beat * snapPrecision);
+    const snappedFixed = Math.round(beatFixed / snapValueFixed) * snapValueFixed;
+    return snappedFixed / snapPrecision;
   }
 
   /**

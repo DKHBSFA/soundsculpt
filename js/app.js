@@ -9,7 +9,10 @@ import { history, ToggleStepCommand, AddVoiceCommand } from './history.js';
 import { audioContext } from './audio/context-manager.js';
 import { scheduler } from './audio/scheduler.js';
 import { mixer } from './audio/mixer.js';
-import { synthEngine } from './audio/synth.js';
+// Strudel engine for pattern playback (replaces synthEngine for playback)
+import { strudelEngine, setSharedAudioContext, PhaseManager } from './audio/strudel-engine.js';
+// Tone.js preview for real-time input (MIDI, musical typing)
+import { tonePreview } from './audio/tone-preview.js';
 import { createSequencerView } from './views/sequencer.js';
 import { createPianoRollView } from './views/piano-roll.js';
 import { createScoreView } from './views/score.js';
@@ -22,19 +25,24 @@ import {
   setupDragDrop,
   setupBeforeUnload,
   getRecentProjects,
+  loadRecentProject,
   addToRecent,
   copyShareUrl,
   checkUrlForProject,
 } from './persistence.js';
 import { exportWAV, exportMIDI } from './export.js';
+import { exportAndDownload as exportOpus } from './export/opus-encoder.js';
 import { draftManager } from './draft-manager.js';
 import { keyboard, registerDefaultShortcuts, musicalTyping } from './keyboard.js';
-import { playDrum, playNote } from './audio/synth.js';
 import './ui/toast.js';
+// Generation v2 engine (AI + Rules hybrid)
+import { generate as generateEngineV2 } from './generation/index.js';
+// Legacy generation for fallback (TODO: remove after full migration)
 import {
   initGenerationUI,
   renderStyleGrid,
   renderTemplateGrid,
+  renderModelSelector,
   generate as generateMusic,
   generateWithAI,
   resetOptions as resetGenerationOptions,
@@ -50,6 +58,8 @@ import { sessionPlayer } from './session/player.js';
 import { initSessionControls } from './ui/session-controls.js';
 import { settingsModal } from './ui/settings.js';
 import { voiceMenu } from './ui/voice-menu.js';
+import { mixerWindow } from './ui/mixer-window.js';
+import { llmResponseViewer } from './ui/llm-response-viewer.js';
 
 // === DOM Elements ===
 const elements = {
@@ -124,6 +134,7 @@ const elements = {
   btnGenerateMusic: document.getElementById('btn-generate-music'),
   styleGrid: document.getElementById('style-grid'),
   templateGrid: document.getElementById('template-grid'),
+  modelSelector: document.getElementById('model-selector'),
 
   // Menus
   menuBtns: document.querySelectorAll('.menu-btn'),
@@ -141,6 +152,9 @@ let scoreView = null;
 let patchEditorView = null;
 let codeEditorView = null;
 let meterAnimationId = null;
+
+// Phase manager for automatic phase transitions (BUG-006 fix)
+const phaseManager = new PhaseManager(strudelEngine);
 
 // === Theme Toggle ===
 
@@ -225,82 +239,8 @@ function initVoicePanelResize() {
 }
 
 // === Note Playback ===
-
-// Track which notes have been triggered to avoid re-triggering
-let lastTriggeredStep = -1;
-const triggeredNotes = new Set();
-
-/**
- * Play melodic notes (from piano roll, score, or AI generation) at a given step
- * This supplements the step sequencer by handling notes with startBeat/durationBeats
- * @param {number} stepIndex - Current step (0-15 for first bar, 0-63 for 4 bars)
- * @param {number} time - Scheduled Web Audio time
- */
-function playNotesAtStep(stepIndex, time) {
-  const voices = state.get('voices') || [];
-  const tempo = state.get('transport')?.tempo || 120;
-  const beatsPerSecond = tempo / 60;
-
-  // Clear triggered notes when we restart from beginning
-  if (stepIndex < lastTriggeredStep) {
-    triggeredNotes.clear();
-  }
-  lastTriggeredStep = stepIndex;
-
-  // Steps per beat (16th notes = 4 steps per beat)
-  const stepsPerBeat = 4;
-
-  // Check if any voice has solo enabled
-  const anySolo = voices.some(v => v.solo);
-
-  voices.forEach(voice => {
-    // Skip muted voices or non-solo when solo is active
-    if (voice.muted) return;
-    if (anySolo && !voice.solo) return;
-
-    // Skip drum voices (they use steps, not notes)
-    if (voice.type === 'drum' || voice.sourceType === 'drum') return;
-
-    // Notes can be in voice.notes or voice.content.notes (AI generation uses content.notes)
-    const notes = voice.notes || voice.content?.notes || [];
-
-    notes.forEach((note, noteIndex) => {
-      // Create unique key for this note
-      const noteKey = `${voice.id}-${noteIndex}-${note.startBeat}`;
-
-      // Skip already triggered notes
-      if (triggeredNotes.has(noteKey)) return;
-
-      // Check if this note should start at this step
-      // startBeat is in beats, we're checking at step resolution (1/4 beat)
-      const noteStartStep = Math.floor(note.startBeat * stepsPerBeat);
-
-      // Trigger note if we're at or just past its start step
-      if (noteStartStep === stepIndex) {
-        // Calculate duration in seconds
-        const durationBeats = note.durationBeats || 0.5;
-        const durationSeconds = durationBeats / beatsPerSecond;
-
-        // Determine synth preset
-        const synthPreset = voice.synthPreset || voice.sound || getDefaultPresetForVoice(voice);
-
-        // Play the note
-        playNote(
-          voice.id,
-          note.pitch,
-          time,
-          durationSeconds,
-          (note.velocity || 100) / 127,
-          voice.name,
-          synthPreset
-        );
-
-        // Mark as triggered
-        triggeredNotes.add(noteKey);
-      }
-    });
-  });
-}
+// NOTE: Pattern playback is now handled by Strudel Engine.
+// This section handles real-time preview via Tone.js for input feedback.
 
 /**
  * Get default synth preset based on voice name/type
@@ -317,13 +257,84 @@ function getDefaultPresetForVoice(voice) {
   return 'default';
 }
 
+/**
+ * Play a preview note via Tone.js (for MIDI input, musical typing)
+ * @param {number} midiNote - MIDI note number
+ * @param {number} velocity - Velocity 0-1
+ * @param {string} preset - Synth preset name
+ */
+function playPreviewNote(midiNote, velocity = 0.8, preset = 'default') {
+  if (tonePreview.isReady()) {
+    tonePreview.setPreset(preset);
+    tonePreview.noteOn(midiNote, velocity);
+  }
+}
+
+/**
+ * Stop a preview note
+ * @param {number} midiNote - MIDI note number
+ */
+function stopPreviewNote(midiNote) {
+  if (tonePreview.isReady()) {
+    tonePreview.noteOff(midiNote);
+  }
+}
+
+// === Audio Engine Initialization ===
+
+/**
+ * Initialize audio engines with shared AudioContext
+ * Sets up Strudel for pattern playback and Tone.js for input preview
+ */
+async function initAudioEngines() {
+  try {
+    // Initialize the AudioContext manager
+    await audioContext.init();
+    const ctx = audioContext.getContext();
+
+    if (!ctx) {
+      console.error('Failed to create AudioContext');
+      return false;
+    }
+
+    // Share context with Strudel engine
+    setSharedAudioContext(ctx);
+
+    // Initialize Tone.js preview with shared context (non-blocking)
+    // Don't await - let it initialize in background to not block UI
+    tonePreview.init(ctx).then((success) => {
+      if (success) {
+        console.log('Tone.js preview ready');
+      }
+    }).catch(err => {
+      console.warn('Tone.js preview init failed:', err);
+    });
+
+    // Pre-initialize Strudel engine (will use shared context)
+    // Don't await - let it initialize in background
+    strudelEngine.init().then((success) => {
+      if (success) {
+        console.log('Strudel engine ready');
+      }
+    }).catch(err => {
+      console.warn('Strudel engine init failed:', err);
+    });
+
+    console.log('Audio engines initialized with shared context');
+    return true;
+  } catch (err) {
+    console.error('Failed to initialize audio engines:', err);
+    return false;
+  }
+}
+
 // === Initialization ===
 
 /**
  * Initialize the application
  */
 async function init() {
-  console.log('SoundSculpt initializing...');
+  console.log('SoundSculpt v2 initializing...');
 
   // Initialize theme toggle early to prevent flash
   initThemeToggle();
@@ -334,6 +345,9 @@ async function init() {
   // Setup persistence
   setupDragDrop();
   setupBeforeUnload();
+
+  // Initialize shared AudioContext and audio engines
+  await initAudioEngines();
 
   // Setup keyboard
   keyboard.init();
@@ -354,6 +368,10 @@ async function init() {
     toggleSessionPunch: toggleSessionPunch,
     playSession: toggleSessionPlayback,
     clearSession: clearSessionData,
+    // Mixer window
+    toggleMixer: () => mixerWindow.toggle(),
+    // AI Response viewer
+    viewAIResponse: () => llmResponseViewer.show(),
   });
 
   // Setup event listeners
@@ -387,13 +405,12 @@ async function init() {
   }
 
   // Setup scheduler trigger callback
+  // NOTE: Strudel handles pattern playback independently.
+  // Scheduler is kept for step sequencer UI sync and patch voice triggers.
   scheduler.setTriggerCallback((stepIndex, time) => {
-    // 1. Step sequencer (drums and step-based voices)
+    // Trigger patch ADSR envelopes for patch voices (BUG-005 fix)
     if (sequencerView) {
       const activeVoices = sequencerView.getActiveStepsAtBeat(stepIndex);
-      synthEngine.triggerStep(activeVoices, stepIndex, time);
-
-      // Trigger patch ADSR envelopes for patch voices (BUG-005 fix)
       for (const { voiceId } of activeVoices) {
         const voice = state.getVoice(voiceId);
         if (voice?.sourceType === 'patch') {
@@ -404,23 +421,25 @@ async function init() {
         }
       }
     }
-
-    // 2. Melodic notes (piano roll, score, AI-generated)
-    playNotesAtStep(stepIndex, time);
+    // NOTE: Pattern/note playback is now handled by Strudel Engine
   });
 
   // Start metering
   mixer.startMetering(updateMeters, 50);
 
-  // Setup musical typing
+  // Setup musical typing to use Tone.js preview (low latency)
   musicalTyping.onNoteOn = (midiNote, velocity) => {
     const selectedVoiceId = state.get('selectedVoiceId');
     if (selectedVoiceId) {
       const voice = state.getVoice(selectedVoiceId);
       if (voice) {
-        playNote(selectedVoiceId, midiNote, null, 0.3, velocity / 127);
+        const preset = getDefaultPresetForVoice(voice);
+        playPreviewNote(midiNote, velocity / 127, preset);
       }
     }
+  };
+  musicalTyping.onNoteOff = (midiNote) => {
+    stopPreviewNote(midiNote);
   };
   musicalTyping.enable();
 
@@ -430,9 +449,10 @@ async function init() {
   // Initialize settings modal (BUG-006 fix)
   settingsModal.init();
 
-  // Initialize API key modal and voice menu
+  // Initialize API key modal, voice menu, and mixer window
   apiKeyModal.init();
   voiceMenu.init();
+  mixerWindow.init();
   initAIToggle();
 
   // Initialize MIDI (Fase 9)
@@ -685,11 +705,17 @@ function setupEventBusListeners() {
     renderVoiceList(); // Update to show new sample in voice
   });
 
-  // MIDI events (Fase 9)
+  // MIDI events (Fase 9) - use Tone.js preview for low latency
   eventBus.on(Events.MIDI_NOTE_ON, ({ note, velocity, voiceId }) => {
     if (voiceId) {
-      playNote(voiceId, note, null, 0.3, velocity / 127);
+      const voice = state.getVoice(voiceId);
+      const preset = voice ? getDefaultPresetForVoice(voice) : 'default';
+      playPreviewNote(note, velocity / 127, preset);
     }
+  });
+
+  eventBus.on(Events.MIDI_NOTE_OFF, ({ note }) => {
+    stopPreviewNote(note);
   });
 
   // === Patch Runtime Integration (BUG-005 fix) ===
@@ -707,9 +733,31 @@ function setupEventBusListeners() {
     }
   });
 
-  // Start patches on transport play
-  eventBus.on(Events.TRANSPORT_PLAY, () => {
+  // Start Strudel playback and patches on transport play
+  eventBus.on(Events.TRANSPORT_PLAY, async () => {
     const voices = state.get('voices') || [];
+    const tempo = state.get('transport')?.tempo || 120;
+
+    // Start Strudel engine with current voices
+    strudelEngine.setBpm(tempo);
+    strudelEngine.setVoices(voices);
+    await strudelEngine.play();
+
+    // Start phase manager if voices have phased patterns (BUG-006 fix)
+    const hasPhases = voices.some(v => v.phasedPatterns && Object.keys(v.phasedPatterns).length > 0);
+    if (hasPhases) {
+      // Standard form: intro (1-8), build (9-16), climax (17-20), resolve (21-24)
+      const phases = state.get('generation.phases') || [
+        { name: 'intro', bars: [1, 8] },
+        { name: 'build', bars: [9, 16] },
+        { name: 'climax', bars: [17, 20] },
+        { name: 'resolve', bars: [21, 24] },
+      ];
+      phaseManager.setPhases(phases, tempo);
+      phaseManager.start();
+    }
+
+    // Start patch voices
     for (const voice of voices) {
       if (voice.sourceType === 'patch' && voice.content?.patch) {
         patchManager.buildPatch(voice.id, voice.content.patch);
@@ -718,8 +766,15 @@ function setupEventBusListeners() {
     }
   });
 
-  // Stop patches on transport stop
+  // Stop Strudel and patches on transport stop
   eventBus.on(Events.TRANSPORT_STOP, () => {
+    // Stop Strudel playback
+    strudelEngine.stop();
+
+    // Stop phase manager (BUG-006 fix)
+    phaseManager.stop();
+
+    // Stop patch voices
     const voices = state.get('voices') || [];
     for (const voice of voices) {
       if (voice.sourceType === 'patch') {
@@ -1113,6 +1168,53 @@ function renderVoiceList() {
       e.stopPropagation();
       voiceMenu.show(voiceId, e.currentTarget);
     });
+
+    // Double-click on name to rename
+    strip.querySelector('.voice-strip-name')?.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      const nameSpan = e.target;
+      const voice = state.getVoice(voiceId);
+      const originalName = voice.name;
+
+      // Create inline input
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'voice-rename-input';
+      input.value = originalName;
+      input.style.cssText = `
+        width: 100%;
+        padding: 2px 4px;
+        font: inherit;
+        background: var(--color-surface-elevated);
+        border: 1px solid var(--color-accent);
+        border-radius: 4px;
+        color: inherit;
+      `;
+
+      // Replace span with input
+      nameSpan.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const saveName = () => {
+        const newName = input.value.trim() || originalName;
+        if (newName !== originalName) {
+          state.updateVoice(voiceId, { name: newName });
+        }
+        renderVoiceList();
+      };
+
+      input.addEventListener('blur', saveName);
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') {
+          ke.preventDefault();
+          saveName();
+        } else if (ke.key === 'Escape') {
+          ke.preventDefault();
+          renderVoiceList(); // Cancel: just re-render
+        }
+      });
+    });
   });
 }
 
@@ -1203,11 +1305,20 @@ function handleMenuAction(action) {
     case 'export-midi':
       exportMIDI();
       break;
+    case 'export-opus':
+      exportOpus();
+      break;
     case 'share':
       copyShareUrl();
       break;
     case 'settings':
       settingsModal.show();
+      break;
+    case 'mixer':
+      mixerWindow.toggle();
+      break;
+    case 'view-ai-response':
+      llmResponseViewer.show();
       break;
     case 'undo':
       history.undo();
@@ -1247,6 +1358,7 @@ function showGenerationModal() {
   // Re-render grids (in case options were changed)
   renderStyleGrid(elements.styleGrid);
   renderTemplateGrid(elements.templateGrid);
+  renderModelSelector(elements.modelSelector);
 
   elements.generationModal?.classList.remove('hidden');
 }
@@ -1358,8 +1470,31 @@ function updateRecentProjects() {
   if (recent.length > 0 && elements.recentProjects && elements.recentList) {
     elements.recentProjects.classList.remove('hidden');
     elements.recentList.innerHTML = recent
-      .map((r) => `<li>${r.name}</li>`)
+      .map((r) => `<li class="recent-item" data-name="${r.name}">${r.name}</li>`)
       .join('');
+
+    // Add click handlers
+    elements.recentList.querySelectorAll('.recent-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const name = item.dataset.name;
+        const projectData = loadRecentProject(name);
+        if (projectData) {
+          state.loadProject(projectData);
+          showApp();
+          eventBus.emit(Events.TOAST_SHOW, {
+            message: `Loaded "${name}"`,
+            type: 'success',
+          });
+        } else {
+          // Project data not in cache, prompt to load file
+          eventBus.emit(Events.TOAST_SHOW, {
+            message: 'Project not in cache. Please load the file from your computer.',
+            type: 'info',
+          });
+          openFileDialog();
+        }
+      });
+    });
   }
 }
 
@@ -1374,4 +1509,10 @@ function hideRecoveryModal() {
 }
 
 // === Start ===
-document.addEventListener('DOMContentLoaded', init);
+// ES modules are deferred, so DOMContentLoaded may have already fired
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  // DOM is already ready, call init directly
+  init();
+}

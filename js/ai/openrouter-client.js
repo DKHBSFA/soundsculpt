@@ -3,15 +3,48 @@
  * Handles AI-powered music generation via OpenRouter
  */
 
+import { llmResponseViewer } from '../ui/llm-response-viewer.js';
+
 // API key offuscata (base64) - solo per scoraggiare copia-incolla
 const DEFAULT_API_KEY = atob('c2stb3ItdjEtNWM5NGU4NTkwMmVhMmM2OWY1NWJiODVlYWNlNzI0YTJkMDFlNTk2YmIwOTgyZTZiYWE2YmU3OWNhMWI1NzJjMw==');
 
+/**
+ * Available AI models for music generation
+ * Gemma 3 is default because it knows Strudel syntax
+ */
+export const AI_MODELS = [
+  {
+    id: 'google/gemma-3-27b-it:free',
+    name: 'Gemma 3 27B',
+    description: 'Best for Strudel patterns (recommended)',
+    free: true
+  },
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'Llama 3.3 70B',
+    description: 'Large model, good reasoning',
+    free: true
+  },
+  {
+    id: 'arcee-ai/trinity-large-preview:free',
+    name: 'Trinity Large',
+    description: 'Creative writing focus',
+    free: true
+  },
+  {
+    id: 'deepseek/deepseek-r1:free',
+    name: 'DeepSeek R1',
+    description: 'Strong reasoning model',
+    free: true
+  }
+];
+
 const OPENROUTER_CONFIG = {
   endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-  defaultModel: 'arcee-ai/trinity-large-preview:free',
+  defaultModel: 'google/gemma-3-27b-it:free', // Gemma 3 knows Strudel!
   fallbackModels: [
-    'google/gemma-3-27b-it:free',
-    'meta-llama/llama-3.3-70b-instruct:free'
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'arcee-ai/trinity-large-preview:free'
   ],
   // Generation parameters for creativity
   temperature: 0.85,
@@ -73,8 +106,11 @@ class OpenRouterClient {
    * @returns {Promise<Object>} Parsed JSON response
    */
   async generate(systemPrompt, userPrompt, options = {}) {
-    const model = options.model || OPENROUTER_CONFIG.defaultModel;
+    const model = options.model || this.getSavedModel();
     this.currentModel = model;
+
+    // Store prompts for transparency viewer
+    this._lastPrompts = { systemPrompt, userPrompt };
 
     try {
       const response = await this._makeRequest(systemPrompt, userPrompt, model, options);
@@ -188,6 +224,24 @@ class OpenRouterClient {
 
     const content = data.choices[0].message.content;
 
+    // Store response for transparency viewer (BEFORE any parsing)
+    llmResponseViewer.storeResponse({
+      systemPrompt: this._lastPrompts?.systemPrompt || '',
+      userPrompt: this._lastPrompts?.userPrompt || '',
+      rawResponse: content,
+      model: this.currentModel,
+      usage: data.usage || {}
+    });
+
+    // Also log to console for debugging
+    console.group('🤖 RAW LLM RESPONSE (before conversion)');
+    console.log('Model:', this.currentModel);
+    console.log('Usage:', data.usage);
+    console.log('─'.repeat(60));
+    console.log(content);
+    console.log('─'.repeat(60));
+    console.groupEnd();
+
     try {
       const parsed = JSON.parse(content);
       return {
@@ -221,6 +275,35 @@ class OpenRouterClient {
    */
   getCurrentModel() {
     return this.currentModel;
+  }
+
+  /**
+   * Set the model to use for next generation
+   * @param {string} modelId - Model ID from AI_MODELS
+   */
+  setModel(modelId) {
+    const model = AI_MODELS.find(m => m.id === modelId);
+    if (model) {
+      this.currentModel = modelId;
+      // Save preference
+      localStorage.setItem('soundsculpt-ai-model', modelId);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get saved model preference or default
+   */
+  getSavedModel() {
+    return localStorage.getItem('soundsculpt-ai-model') || OPENROUTER_CONFIG.defaultModel;
+  }
+
+  /**
+   * Get available models list
+   */
+  getAvailableModels() {
+    return AI_MODELS;
   }
 }
 

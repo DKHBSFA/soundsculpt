@@ -7,8 +7,8 @@ import { state } from './state.js';
 import { sessionPlayer } from './session/player.js';
 import { stepsToStrudel, notesToStrudel } from './sync/view-sync.js';
 
-const SCHEMA_VERSION = 3; // Bumped for patternCode migration
-const APP_VERSION = '0.1.0';
+const SCHEMA_VERSION = 4; // v4: Strudel integration, phased patterns, mixer settings
+const APP_VERSION = '1.0.0';
 const FILE_EXTENSION = '.soundsculpt';
 
 /**
@@ -73,6 +73,9 @@ export function saveProject() {
 
     downloadFile(json, filename);
 
+    // Add to recent with project data for quick reload
+    addToRecent(projectName, Date.now(), projectFile);
+
     state.markClean();
     eventBus.emit(Events.PROJECT_SAVE, { filename });
     eventBus.emit(Events.TOAST_SHOW, { message: 'Project saved', type: 'success' });
@@ -121,6 +124,140 @@ function migrateProjectFile(data) {
   if (migrated.schemaVersion === 2) {
     migrated.schemaVersion = 3;
     migrated = migrateVoicesToPatternCode(migrated);
+  }
+
+  // v3 -> v4: Strudel integration, phased patterns, mixer settings
+  if (migrated.schemaVersion === 3) {
+    migrated.schemaVersion = 4;
+    migrated = migrateToV4(migrated);
+  }
+
+  return migrated;
+}
+
+/**
+ * Migrate v3 project to v4 schema
+ * v4 includes: phased patterns, mixer settings, form structure
+ */
+function migrateToV4(data) {
+  const migrated = { ...data };
+
+  // Ensure project has v4 fields
+  if (migrated.project) {
+    migrated.project = {
+      ...migrated.project,
+      style: migrated.project.style || 'electronic',
+      key: migrated.project.key || 'C minor',
+      energy: migrated.project.energy ?? 50,
+    };
+  }
+
+  // Ensure transport has v4 fields
+  if (!migrated.transport) {
+    migrated.transport = {
+      tempo: migrated.project?.tempo || data.transport?.tempo || 120,
+      timeSignature: [4, 4],
+    };
+  } else {
+    migrated.transport = {
+      ...migrated.transport,
+      timeSignature: migrated.transport.timeSignature || [4, 4],
+    };
+  }
+
+  // Migrate voices to v4 format with phased patterns and mixer settings
+  if (migrated.voices && Array.isArray(migrated.voices)) {
+    migrated.voices = migrated.voices.map(voice => {
+      // Create patterns object if voice has single patternCode
+      let patterns = voice.patterns;
+      if (!patterns && voice.patternCode) {
+        // Convert single pattern to all phases
+        patterns = {
+          intro: voice.patternCode,
+          build: voice.patternCode,
+          climax: voice.patternCode,
+          resolve: voice.patternCode,
+        };
+      } else if (!patterns) {
+        patterns = {
+          intro: 'silence',
+          build: 'silence',
+          climax: 'silence',
+          resolve: 'silence',
+        };
+      }
+
+      // Create mixer settings if not present
+      const mixer = voice.mixer || {
+        volume: voice.volume ?? 0.8,
+        pan: voice.pan ?? 0,
+        muted: voice.muted ?? false,
+        solo: voice.solo ?? false,
+        sends: voice.sends || { reverb: 0.3, delay: 0 },
+      };
+
+      // Determine voice role from name/type
+      let role = voice.role;
+      if (!role) {
+        const name = (voice.name || '').toLowerCase();
+        if (name.includes('lead') || name.includes('melody')) {
+          role = 'lead';
+        } else if (name.includes('bass')) {
+          role = 'bass';
+        } else if (name.includes('pad') || name.includes('strings')) {
+          role = 'harmonic-bed';
+        } else if (name.includes('drum') || name.includes('kick') || name.includes('snare') || name.includes('hihat')) {
+          role = 'rhythmic';
+        } else if (name.includes('arp')) {
+          role = 'arpeggio';
+        } else {
+          role = 'harmonic-bed';
+        }
+      }
+
+      return {
+        id: voice.id,
+        name: voice.name,
+        type: voice.type || 'melodic',
+        sourceType: voice.sourceType || (voice.type === 'drum' ? 'drum' : 'synth'),
+        soundfont: voice.soundfont || null,
+        role,
+        patterns,
+        mixer,
+        // Keep legacy fields for backwards compat
+        patternCode: voice.patternCode,
+        color: voice.color,
+        icon: voice.icon,
+        content: voice.content,
+        // Direct properties for app.js compatibility
+        volume: mixer.volume,
+        pan: mixer.pan,
+        muted: mixer.muted,
+        solo: mixer.solo,
+        sends: mixer.sends,
+      };
+    });
+  }
+
+  // Add form structure if not present
+  if (!migrated.form) {
+    migrated.form = {
+      phases: [
+        { name: 'intro', bars: [0, 4] },
+        { name: 'build', bars: [4, 12] },
+        { name: 'climax', bars: [12, 20] },
+        { name: 'resolve', bars: [20, 24] },
+      ],
+    };
+  }
+
+  // Add master effects if not present
+  if (!migrated.masterEffects) {
+    migrated.masterEffects = {
+      reverb: 0.4,
+      delay: 0,
+      limiter: true,
+    };
   }
 
   return migrated;
@@ -344,24 +481,64 @@ export function exportMIDI() {
 
 // Track recent projects in localStorage
 const RECENT_KEY = 'soundsculpt:recent';
-const MAX_RECENT = 5;
+const RECENT_DATA_KEY = 'soundsculpt:recent:data';
+const MAX_RECENT = 3; // Reduced to 3 to save localStorage space
 
 /**
- * Add project to recent list
+ * Add project to recent list with full data
+ * @param {string} name - Project name
+ * @param {number} timestamp - Timestamp
+ * @param {Object} projectData - Full project data (optional)
  */
-export function addToRecent(name, timestamp = Date.now()) {
+export function addToRecent(name, timestamp = Date.now(), projectData = null) {
   try {
+    // Update name/timestamp list
     const recent = getRecentProjects();
     const filtered = recent.filter((r) => r.name !== name);
     filtered.unshift({ name, timestamp });
-    localStorage.setItem(RECENT_KEY, JSON.stringify(filtered.slice(0, MAX_RECENT)));
+    const limitedRecent = filtered.slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(limitedRecent));
+
+    // Also store project data if provided
+    if (projectData) {
+      const recentData = getRecentProjectsData();
+      // Remove old entry
+      const filteredData = recentData.filter((r) => r.name !== name);
+      // Create minimal data (strip samples to save space)
+      const minimalData = createMinimalProjectData(projectData, name);
+      filteredData.unshift(minimalData);
+      // Keep only data for projects in the recent list
+      const recentNames = new Set(limitedRecent.map(r => r.name));
+      const cleanedData = filteredData.filter(d => recentNames.has(d.name));
+      localStorage.setItem(RECENT_DATA_KEY, JSON.stringify(cleanedData));
+    }
   } catch (e) {
-    // localStorage may be unavailable
+    console.warn('Failed to save recent project:', e);
   }
 }
 
 /**
- * Get recent projects list
+ * Create minimal project data (strip samples to save space)
+ */
+function createMinimalProjectData(projectData, name) {
+  const minimal = {
+    name,
+    project: projectData.project,
+    transport: projectData.transport,
+    voices: projectData.voices?.map(v => ({
+      ...v,
+      sampleData: undefined, // Remove sample data
+      content: v.content ? {
+        ...v.content,
+        sampleData: undefined,
+      } : v.content,
+    })),
+  };
+  return minimal;
+}
+
+/**
+ * Get recent projects list (names and timestamps only)
  */
 export function getRecentProjects() {
   try {
@@ -369,6 +546,34 @@ export function getRecentProjects() {
     return data ? JSON.parse(data) : [];
   } catch (e) {
     return [];
+  }
+}
+
+/**
+ * Get recent projects data (full project data)
+ */
+export function getRecentProjectsData() {
+  try {
+    const data = localStorage.getItem(RECENT_DATA_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Load a recent project by name
+ * @param {string} name - Project name
+ * @returns {Object|null} Project data or null if not found
+ */
+export function loadRecentProject(name) {
+  try {
+    const recentData = getRecentProjectsData();
+    const project = recentData.find(r => r.name === name);
+    return project || null;
+  } catch (e) {
+    console.warn('Failed to load recent project:', e);
+    return null;
   }
 }
 
@@ -587,9 +792,29 @@ export function generateShareUrl() {
 }
 
 /**
+ * Check if project contains sample data
+ */
+function projectHasSamples() {
+  const voices = state.get('voices') || [];
+  return voices.some(v =>
+    v.sampleData ||
+    v.content?.sampleData ||
+    v.sourceType === 'sample'
+  );
+}
+
+/**
  * Copy share URL to clipboard
  */
 export async function copyShareUrl() {
+  // Warn if project contains samples
+  if (projectHasSamples()) {
+    eventBus.emit(Events.TOAST_SHOW, {
+      message: 'Note: Sample audio will not be included in the shared URL.',
+      type: 'warning',
+    });
+  }
+
   const url = generateShareUrl();
   if (!url) {
     eventBus.emit(Events.TOAST_SHOW, {

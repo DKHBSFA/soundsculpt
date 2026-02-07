@@ -91,13 +91,13 @@ function buildSoundfontPattern(soundfont, melodic, rhythm, voiceConfig, plan) {
     const pitches = rhythm?.pitches || voiceConfig.pitches || [plan.metadata?.key?.root + '2' || 'c3'];
     const struct = densityToStruct(rhythm?.density || 0.25);
     const noteStr = pitches.map(p => p.toLowerCase()).join(' ');
-    return `note("<${noteStr}>").s("${sfName}").struct("${struct}")`;
+    return `note("<${noteStr}>").soundfont("${sfName}").struct("${struct}")`;
   }
 
   // No melodic content - simple sustained
   if (!melodic) {
     const rootNote = (plan.metadata?.key?.root || 'C') + '3';
-    return `note("${rootNote.toLowerCase()}").s("${sfName}").slow(8)`;
+    return `note("${rootNote.toLowerCase()}").soundfont("${sfName}").slow(8)`;
   }
 
   // Build based on melodic type
@@ -106,17 +106,22 @@ function buildSoundfontPattern(soundfont, melodic, rhythm, voiceConfig, plan) {
     case 'pedal': {
       const note = melodic.notes?.[0]?.toLowerCase() || 'c3';
       const slow = melodic.type === 'pedal' ? 8 : 4;
-      return `note("${note}").s("${sfName}").slow(${slow})`;
+      return `note("${note}").soundfont("${sfName}").slow(${slow})`;
     }
 
     case 'arpeggiated': {
-      const chordNotes = melodic.notes || getChordNotesFromPlan(plan);
+      // BUG-002/BUG-005 fix: Ensure we have actual chord notes, not just one note
+      let chordNotes = melodic.notes;
+      if (!chordNotes || chordNotes.length < 2) {
+        // Fall back to generating chord notes from plan
+        chordNotes = getChordNotesFromPlan(plan);
+      }
       const noteStr = chordNotes.map(n => n.toLowerCase()).join(' ');
       const rate = melodic.rate || '1/4';
       const pattern = melodic.pattern || 'up';
       // For arpeggio, use fast to control rate
       const fastVal = rate === '1/8' ? 2 : rate === '1/2' ? 0.5 : 1;
-      return `note("<${noteStr}>").s("${sfName}").fast(${fastVal})`;
+      return `note("<${noteStr}>").soundfont("${sfName}").fast(${fastVal})`;
     }
 
     case 'motif':
@@ -126,27 +131,27 @@ function buildSoundfontPattern(soundfont, melodic, rhythm, voiceConfig, plan) {
       if (rhythm && Array.isArray(rhythm)) {
         // Apply rhythm as durations
         const durPattern = rhythm.join(' ');
-        return `note("<${notes}>").s("${sfName}").dur("<${durPattern}>")`;
+        return `note("<${notes}>").soundfont("${sfName}").dur("<${durPattern}>")`;
       }
-      return `note("<${notes}>").s("${sfName}")`;
+      return `note("<${notes}>").soundfont("${sfName}")`;
     }
 
     case 'ascending':
     case 'descending': {
       const notes = melodic.notes?.map(n => n.toLowerCase()) || ['c4', 'd4', 'e4', 'f4'];
       const noteStr = melodic.type === 'descending' ? notes.reverse().join(' ') : notes.join(' ');
-      return `note("<${noteStr}>").s("${sfName}")`;
+      return `note("<${noteStr}>").soundfont("${sfName}")`;
     }
 
     case 'unison': {
       // Doubling another voice - just use their first note
       const note = melodic.notes?.[0]?.toLowerCase() || 'c4';
-      return `note("${note}").s("${sfName}")`;
+      return `note("${note}").soundfont("${sfName}")`;
     }
 
     default: {
       const note = melodic.notes?.[0]?.toLowerCase() || 'c4';
-      return `note("${note}").s("${sfName}")`;
+      return `note("${note}").soundfont("${sfName}")`;
     }
   }
 }
@@ -189,7 +194,12 @@ function buildSynthPattern(instrument, melodic, rhythm, voiceConfig, plan) {
       break;
 
     case 'arpeggiated': {
-      const noteStr = notes.join(' ');
+      // BUG-005 fix: Ensure we have enough notes for arpeggiation
+      let arpNotes = notes;
+      if (arpNotes.length < 2) {
+        arpNotes = getChordNotesFromPlan(plan).map(n => n.toLowerCase());
+      }
+      const noteStr = arpNotes.join(' ');
       pattern = `note("<${noteStr}>").s("${synthType}")`;
       break;
     }
@@ -298,48 +308,53 @@ function densityToStruct(density) {
 }
 
 /**
- * Get soundfont GM name
+ * Get soundfont name in Strudel format (gm:instrument_name)
  * @param {string} soundfont - Short soundfont name
- * @returns {string} Full GM soundfont name
+ * @returns {string} Strudel soundfont name (gm:instrument)
  */
 function getSoundfontName(soundfont) {
-  // If already prefixed with gm_
-  if (soundfont.startsWith('gm_')) {
+  // If already in gm:format, return as-is
+  if (soundfont.startsWith('gm:')) {
     return soundfont;
   }
 
-  // Look up in mapping
-  const mapped = SOUNDFONT_INSTRUMENTS[soundfont];
-  if (mapped) {
-    return mapped;
+  // Convert gm_ prefix to gm: format
+  if (soundfont.startsWith('gm_')) {
+    return 'gm:' + soundfont.slice(3);
   }
 
-  // Common mappings
+  // Look up in mapping and convert to gm: format
+  const mapped = SOUNDFONT_INSTRUMENTS[soundfont];
+  if (mapped) {
+    return mapped.startsWith('gm_') ? 'gm:' + mapped.slice(3) : 'gm:' + mapped;
+  }
+
+  // Common mappings - using Strudel's gm: format
   const shortcuts = {
-    'piano': 'gm_acoustic_grand_piano',
-    'violin': 'gm_violin',
-    'viola': 'gm_viola',
-    'cello': 'gm_cello',
-    'contrabass': 'gm_contrabass',
-    'tremolo_strings': 'gm_tremolo_strings',
-    'string_ensemble': 'gm_string_ensemble_1',
-    'french_horn': 'gm_french_horn',
-    'trumpet': 'gm_trumpet',
-    'trombone': 'gm_trombone',
-    'tuba': 'gm_tuba',
-    'brass_section': 'gm_brass_section',
-    'flute': 'gm_flute',
-    'oboe': 'gm_oboe',
-    'clarinet': 'gm_clarinet',
-    'bassoon': 'gm_bassoon',
-    'timpani': 'gm_timpani',
-    'harp': 'gm_orchestral_harp',
-    'choir_aahs': 'gm_choir_aahs',
-    'choir': 'gm_choir_aahs',
-    'voice_oohs': 'gm_voice_oohs'
+    'piano': 'gm:acoustic_grand_piano',
+    'violin': 'gm:violin',
+    'viola': 'gm:viola',
+    'cello': 'gm:cello',
+    'contrabass': 'gm:contrabass',
+    'tremolo_strings': 'gm:tremolo_strings',
+    'string_ensemble': 'gm:string_ensemble_1',
+    'french_horn': 'gm:french_horn',
+    'trumpet': 'gm:trumpet',
+    'trombone': 'gm:trombone',
+    'tuba': 'gm:tuba',
+    'brass_section': 'gm:brass_section',
+    'flute': 'gm:flute',
+    'oboe': 'gm:oboe',
+    'clarinet': 'gm:clarinet',
+    'bassoon': 'gm:bassoon',
+    'timpani': 'gm:timpani',
+    'harp': 'gm:orchestral_harp',
+    'choir_aahs': 'gm:choir_aahs',
+    'choir': 'gm:choir_aahs',
+    'voice_oohs': 'gm:voice_oohs'
   };
 
-  return shortcuts[soundfont] || `gm_${soundfont}`;
+  return shortcuts[soundfont] || `gm:${soundfont}`;
 }
 
 /**

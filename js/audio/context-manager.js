@@ -26,9 +26,12 @@ class AudioContextManager {
         eventBus.emit(Events.AUDIO_CONTEXT_STATE, this.context.state);
       };
 
-      // Resume if suspended
+      // Try to resume if suspended (but don't block - might need user gesture)
       if (this.context.state === 'suspended') {
-        await this.context.resume();
+        this.context.resume().catch(() => {
+          // Resume failed, will need user gesture later
+          console.log('AudioContext suspended, needs user gesture to resume');
+        });
       }
 
       this.isInitialized = true;

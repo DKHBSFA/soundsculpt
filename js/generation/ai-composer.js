@@ -345,6 +345,10 @@ export class AIComposer {
   _generateFallbackMelodicContent(voices, root, mode) {
     const content = {};
 
+    // Generate proper chord notes for the key (BUG-002/BUG-005 fix)
+    const chordNotes = this._getTriadNotes(root, mode, 3); // Root triad at octave 3
+    const highChordNotes = this._getTriadNotes(root, mode, 4); // Root triad at octave 4
+
     for (const voice of voices) {
       if (voice.instrument?.family === 'percussion') continue;
 
@@ -358,29 +362,33 @@ export class AIComposer {
             dynamic: phase === 'climax' ? 'f' : 'mp'
           };
         } else if (voice.role === 'harmonic-bed') {
+          // Use full chord notes for arpeggiated patterns (BUG-005 fix)
           content[voice.id][phase] = {
             type: phase === 'intro' ? 'sustained' : 'arpeggiated',
-            notes: [`${root}3`],
+            notes: phase === 'intro' ? [`${root}3`] : chordNotes,
             pattern: 'up',
+            rate: phase === 'climax' ? '1/8' : '1/4',
             dynamic: phase === 'climax' ? 'f' : 'mp'
           };
         } else if (voice.role === 'texture') {
+          // Add more notes for texture voices
           content[voice.id][phase] = {
             type: 'sustained',
-            notes: [`${root}5`],
+            notes: highChordNotes.slice(0, 2), // Use 2 notes for texture
             dynamic: phase === 'climax' ? 'mf' : 'pp'
           };
         } else if (voice.role === 'accent') {
+          // Create a more interesting melodic motif
           content[voice.id][phase] = {
             type: 'motif',
-            notes: [`${root}4`, `${root}4`, `${root}5`],
-            rhythm: [1, 0.5, 2],
+            notes: this._generateMotif(root, mode, phase),
+            rhythm: [1, 0.5, 0.5, 2],
             dynamic: 'ff'
           };
         } else if (voice.role === 'climax-power') {
           content[voice.id][phase] = {
             type: 'sustained',
-            notes: [`${root}4`],
+            notes: highChordNotes,
             dynamic: 'ff'
           };
         }
@@ -388,6 +396,61 @@ export class AIComposer {
     }
 
     return content;
+  }
+
+  /**
+   * Get triad notes for a key
+   * @param {string} root - Root note
+   * @param {string} mode - 'minor' or 'major'
+   * @param {number} octave - Octave number
+   * @returns {string[]} Array of note names with octave
+   */
+  _getTriadNotes(root, mode, octave) {
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const rootIdx = notes.indexOf(root.toUpperCase());
+    if (rootIdx === -1) return [`${root}${octave}`];
+
+    const third = mode === 'minor' ? 3 : 4; // Minor 3rd or Major 3rd
+    const fifth = 7; // Perfect 5th
+
+    return [
+      `${root}${octave}`,
+      `${notes[(rootIdx + third) % 12]}${octave}`,
+      `${notes[(rootIdx + fifth) % 12]}${octave}`
+    ];
+  }
+
+  /**
+   * Generate a melodic motif for accent voices
+   * @param {string} root - Root note
+   * @param {string} mode - Key mode
+   * @param {string} phase - Current phase
+   * @returns {string[]} Array of note names
+   */
+  _generateMotif(root, mode, phase) {
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const rootIdx = notes.indexOf(root.toUpperCase());
+    if (rootIdx === -1) return [`${root}4`, `${root}4`, `${root}5`];
+
+    const third = mode === 'minor' ? 3 : 4;
+    const fifth = 7;
+
+    // Create ascending motif for climax, descending for others
+    if (phase === 'climax') {
+      return [
+        `${root}4`,
+        `${notes[(rootIdx + third) % 12]}4`,
+        `${notes[(rootIdx + fifth) % 12]}4`,
+        `${root}5`
+      ];
+    } else {
+      return [
+        `${notes[(rootIdx + fifth) % 12]}4`,
+        `${notes[(rootIdx + third) % 12]}4`,
+        `${root}4`,
+        `${root}4`
+      ];
+    }
   }
 
   /**

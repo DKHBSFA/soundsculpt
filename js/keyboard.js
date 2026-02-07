@@ -140,6 +140,8 @@ export function registerDefaultShortcuts(handlers) {
     toggleSessionPunch,
     playSession,
     clearSession,
+    toggleMixer,
+    viewAIResponse,
   } = handlers;
 
   // Transport
@@ -230,6 +232,24 @@ export function registerDefaultShortcuts(handlers) {
     action: addVoice,
     description: 'Add Voice',
   });
+
+  // Mixer window
+  if (toggleMixer) {
+    keyboard.register({
+      key: 'x',
+      action: toggleMixer,
+      description: 'Toggle Mixer Window',
+    });
+  }
+
+  // AI Response viewer
+  if (viewAIResponse) {
+    keyboard.register({
+      key: 'i',
+      action: viewAIResponse,
+      description: 'View AI Response',
+    });
+  }
 
   // Session mode (Fase 11b)
   if (toggleSessionRecord) {

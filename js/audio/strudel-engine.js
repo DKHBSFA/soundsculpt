@@ -3,7 +3,20 @@
  *
  * Wrapper for @strudel/web with soundfonts support.
  * Handles pattern playback, phase transitions, and voice control.
+ * Uses shared AudioContext for integration with Tone.js and mixer.
  */
+
+// Shared AudioContext reference (set externally via setAudioContext)
+let sharedAudioContext = null;
+
+/**
+ * Set shared AudioContext for Strudel to use
+ * Must be called before init() to ensure Strudel uses the same context
+ * @param {AudioContext} ctx - The AudioContext to share
+ */
+export function setSharedAudioContext(ctx) {
+  sharedAudioContext = ctx;
+}
 
 /**
  * Strudel Engine class for audio playback
@@ -39,17 +52,33 @@ class StrudelEngine {
 
   /**
    * Internal initialization
+   * Uses shared AudioContext if available (set via setSharedAudioContext)
    * @returns {Promise<boolean>}
    */
   async _doInit() {
     try {
-      // Load Strudel from CDN
-      const { initStrudel, repl } = await import('https://unpkg.com/@strudel/web@1.0.3/dist/index.mjs');
+      // Load Strudel from CDN (aligned with import map version 1.1.0)
+      const strudelWeb = await import('https://unpkg.com/@strudel/web@1.1.0/dist/index.mjs');
+      const { initStrudel, repl } = strudelWeb;
 
       // Load soundfonts
-      await import('https://unpkg.com/@strudel/soundfonts@1.0.0/dist/index.mjs');
+      await import('https://unpkg.com/@strudel/soundfonts@1.1.0/dist/index.mjs');
 
-      // Initialize
+      // If we have a shared AudioContext, tell Strudel to use it
+      // Strudel's webaudio module exports getAudioContext/setAudioContext
+      if (sharedAudioContext) {
+        try {
+          const strudelWebaudio = await import('@strudel/webaudio');
+          if (strudelWebaudio.setAudioContext) {
+            strudelWebaudio.setAudioContext(sharedAudioContext);
+            console.log('Strudel using shared AudioContext');
+          }
+        } catch (e) {
+          console.warn('Could not set shared AudioContext for Strudel:', e);
+        }
+      }
+
+      // Initialize Strudel
       await initStrudel();
 
       this.repl = repl;
@@ -255,13 +284,24 @@ class StrudelEngine {
 
       // Get pattern for current phase
       let pattern;
-      if (voice.phasedPatterns) {
-        pattern = voice.phasedPatterns[this.currentPhase];
-      } else {
+      if (voice.phasedPatterns && typeof voice.phasedPatterns === 'object') {
+        // Try current phase first, then fall back to any available phase
+        pattern = voice.phasedPatterns[this.currentPhase]
+          || voice.phasedPatterns.climax
+          || voice.phasedPatterns.build
+          || voice.phasedPatterns.intro
+          || voice.phasedPatterns.resolve;
+      }
+      // Fall back to patternCode if no phased pattern found
+      if (!pattern && voice.patternCode && typeof voice.patternCode === 'string') {
         pattern = voice.patternCode;
       }
 
-      if (!pattern || pattern === 'silence') return;
+      // Skip if no valid pattern or silence
+      if (!pattern || pattern === 'silence' || typeof pattern !== 'string') {
+        console.log(`Voice ${voiceId}: no valid pattern for phase ${this.currentPhase}`);
+        return;
+      }
 
       activePatterns.push({
         id: voiceId,

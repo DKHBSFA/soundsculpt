@@ -4,6 +4,7 @@
 
 import { eventBus, Events } from '../event-bus.js';
 import { draftManager } from '../draft-manager.js';
+import { autoSaveManager } from '../persistence.js';
 
 const SETTINGS_KEY = 'soundsculpt:settings';
 
@@ -162,9 +163,14 @@ class SettingsModal {
     const autosaveInterval = parseInt(this.modalEl.querySelector('#setting-autosave-interval').value, 10);
     const theme = this.modalEl.querySelector('#setting-theme').value;
 
-    // Apply autosave settings
+    // Apply autosave settings to draftManager (localStorage autosave)
     draftManager.setAutoSaveEnabled(autosaveEnabled);
     draftManager.setAutoSaveInterval(autosaveInterval);
+
+    // Also apply to autoSaveManager (periodic file downloads)
+    // Convert ms to minutes for autoSaveManager
+    autoSaveManager.setEnabled(autosaveEnabled);
+    autoSaveManager.setInterval(Math.max(1, Math.round(autosaveInterval / 60000)));
 
     // Apply theme
     this.applyTheme(theme);

@@ -6,7 +6,8 @@
 import { eventBus, Events } from './event-bus.js';
 import { state } from './state.js';
 import { audioContext } from './audio/context-manager.js';
-import { synthEngine, playDrum, playNote } from './audio/synth.js';
+// Opus export for streaming/web playback
+import { exportAndDownload as exportOpusAndDownload } from './export/opus-encoder.js';
 
 // ============================================
 // WAV EXPORT

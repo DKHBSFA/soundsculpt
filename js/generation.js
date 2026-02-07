@@ -24,7 +24,7 @@ import {
   validateCadence,
   suggestCadence,
 } from './music-theory.js';
-import { openRouterClient } from './ai/openrouter-client.js';
+import { openRouterClient, AI_MODELS } from './ai/openrouter-client.js';
 import {
   buildSystemPrompt,
   buildUserPrompt,
@@ -2858,6 +2858,12 @@ function createProjectFromAINew(aiData, preset, projectName) {
       ? getDrumKitFromStyle(voiceData.name, preset.style)
       : undefined;
 
+    // Determine if patternCode is an object (phased) or string (single)
+    const isPhased = voiceData.patternCode && typeof voiceData.patternCode === 'object';
+    const mainPattern = isPhased
+      ? (voiceData.patternCode.climax || voiceData.patternCode.build || voiceData.patternCode.intro || '')
+      : (voiceData.patternCode || '');
+
     const voice = state.addVoice({
       name: voiceData.name,
       icon: getIconForType(voiceData.type),
@@ -2865,7 +2871,8 @@ function createProjectFromAINew(aiData, preset, projectName) {
       sourceType: sourceType,
       synthPreset: synthPreset,
       drumKit: drumKit,
-      patternCode: voiceData.patternCode, // Keep full phase patterns
+      patternCode: mainPattern, // Single string pattern for main display
+      phasedPatterns: isPhased ? voiceData.patternCode : null, // Object with phase patterns for Strudel
       content: {
         steps: steps,
         notes: notes,
@@ -3334,14 +3341,64 @@ export function renderTemplateGrid(container) {
 }
 
 /**
+ * Render AI model selector
+ */
+export function renderModelSelector(container) {
+  if (!container) return;
+
+  const savedModel = openRouterClient.getSavedModel();
+
+  container.innerHTML = AI_MODELS.map(model => `
+    <div class="model-option ${model.id === savedModel ? 'selected' : ''}"
+         data-model="${model.id}"
+         role="radio"
+         aria-checked="${model.id === savedModel}"
+         tabindex="0">
+      <div class="model-option-radio"></div>
+      <div class="model-option-info">
+        <span class="model-option-name">${model.name}</span>
+        <span class="model-option-desc">${model.description}</span>
+      </div>
+      ${model.free ? '<span class="model-option-badge">Free</span>' : ''}
+    </div>
+  `).join('');
+
+  // Add click handlers
+  container.querySelectorAll('.model-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const modelId = option.dataset.model;
+      openRouterClient.setModel(modelId);
+
+      // Update UI
+      container.querySelectorAll('.model-option').forEach(o => {
+        o.classList.remove('selected');
+        o.setAttribute('aria-checked', 'false');
+      });
+      option.classList.add('selected');
+      option.setAttribute('aria-checked', 'true');
+    });
+
+    // Keyboard support
+    option.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        option.click();
+      }
+    });
+  });
+}
+
+/**
  * Initialize generation UI
  */
 export function initGenerationUI() {
   const styleGrid = document.getElementById('style-grid');
   const templateGrid = document.getElementById('template-grid');
+  const modelSelector = document.getElementById('model-selector');
 
   renderStyleGrid(styleGrid);
   renderTemplateGrid(templateGrid);
+  renderModelSelector(modelSelector);
 
   // Duration buttons
   const durationBtns = document.querySelectorAll('#duration-buttons .param-btn');
@@ -3911,27 +3968,103 @@ function createProjectFromAI(aiData, genre) {
 
 /**
  * Get appropriate icon for voice type
+ * Comprehensive mapping for drums, synths, and instruments
  */
 function getVoiceIcon(type, sound) {
-  const icons = {
+  // Drum-specific icons
+  const drumIcons = {
     kick: '🥁',
     snare: '🪘',
     hihat: '🔔',
+    hat: '🔔',
     clap: '👏',
     tom: '🥁',
     cymbal: '🔔',
+    crash: '🔔',
+    ride: '🔔',
     perc: '🎵',
-    bass: '🎸',
-    melodic: '🎹',
-    pad: '🎛️',
-    lead: '🎺',
-    arp: '🎹',
+    percussion: '🎵',
+    shaker: '🎵',
+    conga: '🪘',
+    bongo: '🪘',
+    rimshot: '🪘',
   };
 
+  // Instrument/voice type icons
+  const instrumentIcons = {
+    // Bass
+    bass: '🎸',
+    '808': '🎸',
+    sub: '🎸',
+    // Keys
+    piano: '🎹',
+    keys: '🎹',
+    keyboard: '🎹',
+    rhodes: '🎹',
+    organ: '🎹',
+    melodic: '🎹',
+    // Synths
+    synth: '🎛️',
+    pad: '🎛️',
+    arp: '🎛️',
+    lead: '🎺',
+    // Strings
+    strings: '🎻',
+    string: '🎻',
+    violin: '🎻',
+    cello: '🎻',
+    viola: '🎻',
+    // Brass/Winds
+    brass: '🎺',
+    trumpet: '🎺',
+    horn: '🎺',
+    trombone: '🎺',
+    sax: '🎷',
+    saxophone: '🎷',
+    flute: '🎵',
+    clarinet: '🎵',
+    // Guitar
+    guitar: '🎸',
+    acoustic: '🎸',
+    // Other
+    voice: '🎤',
+    vocal: '🎤',
+    choir: '🎤',
+    fx: '✨',
+    effect: '✨',
+    ambient: '🌊',
+  };
+
+  // Check drum types first
   if (type === 'drum') {
-    return icons[sound] || '🥁';
+    const soundLower = (sound || '').toLowerCase();
+    for (const [key, icon] of Object.entries(drumIcons)) {
+      if (soundLower.includes(key)) {
+        return icon;
+      }
+    }
+    return '🥁';
   }
-  return icons[type] || '🎹';
+
+  // Check instrument type
+  const typeLower = (type || '').toLowerCase();
+  const soundLower = (sound || '').toLowerCase();
+
+  // Check type first
+  for (const [key, icon] of Object.entries(instrumentIcons)) {
+    if (typeLower.includes(key)) {
+      return icon;
+    }
+  }
+
+  // Then check sound name
+  for (const [key, icon] of Object.entries(instrumentIcons)) {
+    if (soundLower.includes(key)) {
+      return icon;
+    }
+  }
+
+  return '🎹';
 }
 
 /**
